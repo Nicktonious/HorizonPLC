@@ -12,11 +12,11 @@ class ClassPortActuator extends ClassActuator {
         ClassActuator.call(this, opts);
         this._TypeOutSignals = opts.typeInSignals;
 
-        if (this._QuantityChannel !== this._Pins.length)
+        if (this._ChannelNames.length !== this._Pins.length)
             throw new Error('QuantityChannel must be equal to pins count');
         // Тип сигнала определяет команду записи в порт
-        if (!Array.isArray(this._TypeOutSignals) || this._TypeOutSignals.length !== this._QuantityChannel)
-            throw new Error('_TypeOutSignals must be an array length of _QuantityChannel');
+        if (!Array.isArray(this._TypeOutSignals) || this._TypeOutSignals.length !== this._ChannelNames.length)
+            throw new Error('_TypeOutSignals must be an array length of _ChannelNames.length');
         
         if (opts.pinModes) {
             // Установка режимов согласно конфигу

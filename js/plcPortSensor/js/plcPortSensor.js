@@ -10,10 +10,10 @@ class ClassPortSensor extends ClassSensor {
     constructor(opts) {
         ClassSensor.call(this, opts);
         // Кол-во портов (_Pins) обязано быть равно _QuantityChannel
-        if (this._QuantityChannel !== this._Pins.length)
+        if (this._ChannelNames.length !== this._Pins.length)
             throw new Error('QuantityChannel must be equal to pins count');
         // Тип сигнала определяет команду чтения с порта
-        if (!Array.isArray(this._TypeInSignals) || this._TypeInSignals.length !== this._QuantityChannel)
+        if (!Array.isArray(this._TypeInSignals) || this._TypeInSignals.length !== this._ChannelNames.length)
             throw new Error('_TypeInSignals must be an array length of _QuantityChannel');
         // Порты конфигурируются либо согласно конфигу либо в зависимости от _TypeInSignal
         if (opts.pinModes) {
