@@ -105,7 +105,6 @@ ch1.Alarms.SetZones({
 });
 
 //Для примера установка желтой зоны пропускается
-
 ch1._Alarms.SetZones({
     green: {            //Зеленая зона
         cb: (ch, prevZone) => { console.log(`Left ${prevZone}, now GREEN zone`); } 
@@ -113,6 +112,13 @@ ch1._Alarms.SetZones({
 });
 ```
 </div>
+
+##### Подписка на события зон
+```js
+ch1.EnableAlarms();
+ch1.on('redLow',  () => { console.log('Low red'); });
+ch1.on('redHigh', () => { console.log('High red'); });
+```
 
 ### Зависимости
 <div style = "color: #555">

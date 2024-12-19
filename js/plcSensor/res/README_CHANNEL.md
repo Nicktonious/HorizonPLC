@@ -14,6 +14,59 @@
 Также данный класс композирует в себе сервисные классы (см. [ClassDataRefine](./README_DATA_REFINE.md) и [ClassAlarms](./README_ALARMS.md)), которые безусловно используются в [аксессорах](./README_MIDDLE.md#аксессоры) ClassMiddleSensor при обработке считываемых с датчика значений.
 </div>
 
+### Конфигурация каналов
+<div style = "color: #555">
+Пример полной конфигурации каналов для датчика VL6180:
+```json
+{
+    "vl": {
+        "bus": "I2C10",
+        "name": "VL6180",
+        "article": "02-501-0102-201-0004",
+        "type": "sensor",
+        "channelNames": [
+            "light",
+            "range"
+        ],
+        "channelsConfig": {
+            "light": {
+                "address": "/Horizon/PLC-11-0",
+                "transform": {
+                    "k": 1,
+                    "b": 0
+                },
+                "suppression": {
+                    "low": -100,
+                    "high": 300
+                },
+                "filter": {
+                    "bufferSize": 5,
+                    "filterName": "averageFilter"
+                },
+                "zones": {
+                    "red": {
+                        "low": -500,
+                        "high": 500
+                    }
+                    "yellow": {
+                        "low": -300,
+                        "high": 300
+                    }
+                }
+            },
+            "range": {
+                "address": "/Horizon/PLC-11-0",
+                "transform": {
+                    "transformFunc": "someTransfName" 
+                }
+            }
+        },
+        "modules": ["plcVL6180.min.js"]
+    }
+}
+```
+</div>
+
 ### Поля
 <div style = "color: #555">
 
@@ -40,7 +93,7 @@
 - <mark style="background-color: lightblue">Suppression</mark> - возвращает объект *ClassSuppression*;
 - <mark style="background-color: lightblue">Transform</mark> - возвращает объект *ClassTransform*;
 - <mark style="background-color: lightblue">Alarms</mark> - возвращает объект *ClassAlarms* после его инициализации;
-- <mark style="background-color: lightblue">AvgCapacity</mark> - емкость буфера, в котором хранятся вх. значения; 
+- <mark style="background-color: lightblue">BufferSize</mark> - емкость буфера, в котором хранятся вх. значения; 
 - <mark style="background-color: lightblue">ID</mark> - возвращает идентификатор канала датчика;
 - <mark style="background-color: lightblue">ChangeThreshold</mark> - процент, на который должно измениться показание с датчика, чтобы SM считал его обновившимся;
 - <mark style="background-color: lightblue">Status</mark> - задает и возвращает текущий статус датчика (канала) в виде числового кода. 
@@ -53,7 +106,7 @@
 ### Методы
 <div style = "color: #555">
 
-- <mark style="background-color: lightblue">EnableAlarms()</mark> - создает объект *_Alarms*;
+- <mark style="background-color: lightblue">EnableAlarms(_opts)</mark> - создает объект *_Alarms*;
 - <mark style="background-color: lightblue">ClearBuffer()</mark> - очищает буффер;
 - <mark style="background-color: lightblue">Start(_chNum, _period, _opts)</mark>
 - <mark style="background-color: lightblue">Stop(_chNum)</mark>

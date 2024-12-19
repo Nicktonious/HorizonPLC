@@ -79,7 +79,7 @@ ch1.Transform.SetLinearFunc(0.1, 0);
 // Передача усредняющего фильтра
 ch1.Filter.SetFunc(arr => arr.reduce((curr, prev) => curr+prev, 0)/arr.length);
 //Установка глубины фильтрации (вместимости буфера) для 1-го канала
-ch1.SetAvgCapacity(5);
+ch1.BufferSize = 5;
 
 ch1.EnableAlarms();
 ch1.Alarms.SetZones({
