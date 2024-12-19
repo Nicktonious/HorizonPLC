@@ -1,3 +1,16 @@
+const CH_FUNC_FILE = 'plcDeviceFunctions.js';
+const importFunc = (_funcName, _ch) => {
+    if (!_funcName) return undefined;
+    try {
+        let func = require(CH_FUNC_FILE)[_funcName];
+        if (!func) 
+            H.Logger.Service.Log({ service: _ch.ID, level: 'E', msg: `Couldn't find function ${_funcName}` });
+        return func;
+    } catch (e) {
+        H.Logger.Service.Log({ service: _ch.ID, level: 'E', msg: `Error loading function ${_funcName}` });
+        return undefined;
+    }
+}
 /**
  * @typedef SensorPropsType - объект с описательными характеристиками датчика и параметрами, необходимых для обеспечения работы датчика
  * @property {String} id
@@ -24,15 +37,14 @@ class ClassBaseSensor {
      * @param {SensorOptsType} _opts - объект с описательными характеристиками датчика и параметрами, необходимых для обеспечения работы датчика
      */
     constructor(_opts) { 
-        this._Bus             = _opts.bus;
-        this._Pins            = _opts.pins;
-        this._Address         = _opts.address;
-        this._Id              = _opts.id;
-        this._Article         = _opts.article;
-        this._QuantityChannel = _opts.quantityChannel;
-        this._Name            = _opts.name;
-        this._Type            = _opts.type;
-        this._ChannelNames    = _opts.channelNames;
+        this._Bus     = _opts.bus;
+        this._Pins    = _opts.pins;
+        this._Address = _opts.address;
+        this._Id      = _opts.id;
+        this._Article = _opts.article;
+        this._Name    = _opts.name;
+        this._Type    = _opts.subChannels ? 'hybrid' : 'sensor';
+        this._ChannelNames = _opts.channelNames;
 
         if (_opts.precision)     this._Precision     = _opts.precision;
         if (_opts.repeatability) this._Repeatability = _opts.repeatability;
@@ -60,16 +72,13 @@ class ClassBaseSensor {
         //#region функции которые можно вынести в утилитарный класс
         const isString = (p) => typeof p === 'string';
         const isStringNonEmpty = (p) => typeof p === 'string' && p.length > 0;
-        const isNumberPositive = (p) => typeof p === 'number' && p > 0;
-        const isOptionalString = (p) => !p || isStringNonEmpty(p);
-        const isOptionalStringArray = (p) => !p || (Array.isArray(p) && p.every(i => isString(i)));
+        const isStringArray = (p) => (Array.isArray(p) && p.every(i => isString(i)));
         //#endregion
 
-        if (!isStringNonEmpty(this._Id))                throw new Error(`Invalid _Id`);
-        if (!isStringNonEmpty(this._Article))           throw new Error(`Invalid _Article`);
-        if (!isStringNonEmpty(this._Name))              throw new Error(`Invalid _Name`);
-        if (!isStringNonEmpty(this._Type))              throw new Error(`Invalid _Type`);
-        if (!isNumberPositive(this._QuantityChannel))   throw new Error(`Invalid _QuantityChannel`);
+        if (!isStringNonEmpty(this._Id))        throw new Error(`Invalid _Id`);
+        if (!isStringNonEmpty(this._Article))   throw new Error(`Invalid _Article`);
+        if (!isStringNonEmpty(this._Name))      throw new Error(`Invalid _Name`);
+        if (!isStringArray(this._ChannelNames)) throw new Error(`Invalid _ChannelNames`);
         
         if (this._Bus instanceof I2C && typeof +this._Address != 'number')  // если _Bus это I2C шина, то обязан быть передан _Address 
             throw new Error('Address of i2c device is not provided');
@@ -80,7 +89,6 @@ class ClassBaseSensor {
             pins: this._Pins,
             id: this._Id,
             article: this._Article,
-            quantityChannel: this._QuantityChannel,
             name: this._Name,
             type: this._Type,
             channelNames: this._ChannelNames
@@ -100,11 +108,14 @@ class ClassSensor extends ClassBaseSensor {
     constructor(_opts) {
         ClassBaseSensor.call(this, _opts);
         
-        this._Channels = Array(this._QuantityChannel);
+        this._Channels = Array(this._ChannelNames.length);
 
-        for (let i = 0; i < this._QuantityChannel; i++) {
-            _opts.channelsConfig = _opts.channelsConfig || [];
-            this._Channels[i] = new ClassChannelSensor(this, i, _opts.channelsConfig[i]);  // инициализируем и сохраняем объекты каналов
+        for (let i = 0; i < this._ChannelNames.length; i++) {
+            let ch_name = _opts.channelsConfig[i];
+            // объект конфигурации канала
+            let ch_config = typeof _opts.channelsConfig == 'object' ? _opts.channelsConfig[ch_name] : {};
+
+            this._Channels[i] = new ClassChannelSensor(this, i, ch_config);  // инициализируем и сохраняем объекты каналов
         }
     }
 
@@ -268,9 +279,10 @@ class ClassChannelSensor {
         /** Data refine init */
         this._Transform   = new ClassTransform(opts.transform);
         this._Suppression = new ClassSuppression(opts.suppression);
-        this._Filter = new ClassFilter();
+        this._Filter = new ClassFilter(opts.filter);
         this._Alarms = null;
-        this.AvgCapacity = opts.avgCapacity || 1;
+        if (opts.zones) this.EnableAlarms(opts.zones);
+        this.BufferSize = opts.filter ? (opts.filter.bufferSize || 1) : 1;
         /** ******/
         this.Address = opts.address;
         /** ******/
@@ -368,7 +380,7 @@ class ClassChannelSensor {
      * Сеттер который устанавливает вместимость кольцевого буфера
      * @param {Number} _cap 
     */
-    set AvgCapacity(_cap) {
+    set BufferSize(_cap) {
         if (_cap > 1)
             this._ValueBuffer._depth = _cap;
     }
@@ -377,8 +389,8 @@ class ClassChannelSensor {
      * @method
      * Инициализирует ClassAlarms в полях объекта.  
      */ 
-    EnableAlarms() {
-        this._Alarms = new ClassAlarms(this);
+    EnableAlarms(_opts) {
+        this._Alarms = new ClassAlarms(this, _opts);
     }
 
     /**
@@ -480,9 +492,10 @@ class ClassChannelSensor {
  * Класс реализует функционал для работы с функциями-фильтрами
  */
 class ClassFilter {
-    constructor(_ch) {
+    constructor(_ch, _opts) {
+        let opts = _opts || {};
         this._Channel = _ch;
-        this._FilterFunc = (arr) => arr[arr.length-1];
+        this._FilterFunc = importFunc(opts.filterFunc, _ch) || ((arr) => arr[arr.length-1]);
     }
     /**
      * @method
@@ -517,10 +530,11 @@ class ClassFilter {
 class ClassTransform {
     constructor(_ch, _opts) {
         this._Channel = _ch;
-        if (_opts)
+        if (_opts) {
             this.SetLinearFunc(_opts.k, _opts.b);
-        else
-            this._TransformFunc = (x) => x;
+        } else {
+            this._TransformFunc = importFunc(_opts.transformFunc, _ch) || ((x) => x);
+        }
     }
     /**
      * @method
@@ -626,9 +640,11 @@ class ClassAlarms {
      * @constructor
      * @param {ClassChannelSensor} _channel 
      */
-    constructor(_channel) {
+    constructor(_channel, _opts) {
+        let opts = _opts || {};
         this._Channel = _channel;   // ссылка на объект сенсора
         this.SetDefault();
+        this.SetZones(opts)
     }
     /**
      * @method
@@ -730,6 +746,7 @@ class ClassAlarms {
                        : 'green';
 
         if (prevZone !== this._CurrZone) {
+            this._Channel.emit(this._CurrZone, prevZone);
             this._Callbacks[indexes[this._CurrZone]](this._Channel, prevZone);
         }
     }
