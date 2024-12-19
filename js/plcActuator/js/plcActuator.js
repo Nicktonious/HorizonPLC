@@ -1,3 +1,16 @@
+const CH_FUNC_FILE = 'plcDeviceFunctions.js';
+const importFunc = (_funcName, _ch) => {
+    if (!_funcName) return undefined;
+    try {
+        let func = require(CH_FUNC_FILE)[_funcName];
+        if (!func) 
+            H.Logger.Service.Log({ service: _ch.ID, level: 'E', msg: `Couldn't find function ${_funcName}` });
+        return func;
+    } catch (e) {
+        H.Logger.Service.Log({ service: _ch.ID, level: 'E', msg: `Error loading function ${_funcName}` });
+        return undefined;
+    }
+}
 /**
  * @typedef ActuatorPropsType - объект хранящий описательные характеристики актуатора
  * @property {String} id
@@ -25,9 +38,8 @@ class ClassBaseActuator {
         this._Address      = _opts.address;
         this._Id           = _opts.id;
         this._Article      = _opts.article;
-        this._QuantityChannel = _opts.quantityChannel;
         this._Name         = _opts.name;
-        this._Type         = _opts.type;
+        this._Type    = _opts.subChannels ? 'hybrid' : 'actuator';
         this._ChannelNames = _opts.channelNames;
 
         this.CheckProps();
@@ -53,20 +65,28 @@ class ClassBaseActuator {
         //#region функции которые можно вынести в утилитарный класс
         const isString = (p) => typeof p === 'string';
         const isStringNonEmpty = (p) => typeof p === 'string' && p.length > 0;
-        const isNumberPositive = (p) => typeof p === 'number' && p > 0;
-        const isOptionalString = (p) => !p || isStringNonEmpty(p);
-        const isOptionalStringArray = (p) => !p || (Array.isArray(p) && p.every(i => isString(i)));
+        const isStringArray = (p) => (Array.isArray(p) && p.every(i => isString(i)));
         //#endregion
 
         if (!isStringNonEmpty(this._Id)) throw new Error(`Invalid id`);
         if (!isStringNonEmpty(this._Article)) throw new Error(`Invalid article`);
         if (!isStringNonEmpty(this._Name)) throw new Error(`Invalid name`);
         if (!isStringNonEmpty(this._Type)) throw new Error(`Invalid type`);
-        if (!isNumberPositive(this._QuantityChannel)) throw new Error(`Invalid quantityChannel`);
-        if (!isOptionalStringArray(this._ChannelNames)) throw new Error(`Invalid channelNames`);
+        if (!isStringArray(this._ChannelNames)) throw new Error(`Invalid channelNames`);
 
         if (this._Bus instanceof I2C && typeof +this._Address != 'number')  // если _Bus это I2C шина, то обязан быть передан _Address 
             throw new Error('Address of i2c device is not provided');
+    }
+    GetInfo() {
+        return ({ 
+            bus: this._Bus,
+            pins: this._Pins,
+            id: this._Id,
+            article: this._Article,
+            name: this._Name,
+            type: this._Type,
+            channelNames: this._ChannelNames
+        });
     }
 }
 
@@ -82,11 +102,13 @@ class ClassActuator extends ClassBaseActuator {
     constructor(_opts) {
         ClassBaseActuator.call(this, _opts);
 
-        this._Channels = Array(this._QuantityChannel);
+        this._Channels = Array(this._ChannelNames.length);
 
-        for (let i = 0; i < this._QuantityChannel; i++) {
-            _opts.channelsConfig = _opts.channelsConfig || [];
-            this._Channels[i] = new ClassChannelActuator(this, i, _opts.channelsConfig[i]);
+        for (let i = 0; i < this._ChannelNames.length; i++) {
+            let ch_name = _opts.channelsConfig[i];
+            // объект конфигурации канала
+            let ch_config = typeof _opts.channelsConfig == 'object' ? _opts.channelsConfig[ch_name] : {};
+            this._Channels[i] = new ClassChannelActuator(this, i, ch_config);
         }
     }
 
@@ -202,8 +224,8 @@ class ClassChannelActuator {
         this._ThisActuator = actuator;      // ссылка на объект физического актуатора
         this._ChNum = num;              // номер канала (начиная с 0)
 
-        this._Transform   = new ClassTransform(this);
-        this._Suppression = new ClassSuppression(this);
+        this._Transform   = new ClassTransform(this, opts.transform);
+        this._Suppression = new ClassSuppression(this, opts.suppression);
         this._Status = 0;
 
         this.Address = opts.address;
@@ -423,9 +445,10 @@ class ClassTask {
  * Класс реализует функционал для обработки числовых значений по задаваемым ограничителям (лимитам) и функцией
  */
 class ClassTransform {
-    constructor(_ch) {
+    constructor(_ch, _opts) {
+        let opts = _opts || {};
         this._Channel = _ch;
-        this._TransformFunc = (x) => x;
+        this._TransformFunc = importFunc(opts.transformFunc, _ch) || ((x) => x);
     }
     /**
      * @method
