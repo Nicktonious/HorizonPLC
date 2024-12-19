@@ -21,7 +21,7 @@ let light2 = gl[0];
 let resistance = gl[1];
 light2.Start(40);
 resistance.Filter.SetFunc(average);
-resistance.AvgCapacity = 5;
+resistance.BufferSize = 5;
 
 let gamma;  
 let light;
