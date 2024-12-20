@@ -272,7 +272,7 @@ class ClassChannelSensor {
         this._ChangeThreshold = opts.changeThreshold;
         this._ChNum = num;             //номер канала (начиная с 0)
         /** Флаги */
-        this._Bypass = false;
+        this._Bypass = Boolean(_opts.bypass);
         this._DataUpdated = false;
         this._DataWasRead = false;
         this._TimeStamp;
