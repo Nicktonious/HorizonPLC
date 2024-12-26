@@ -111,7 +111,7 @@ class ClassSensor extends ClassBaseSensor {
         this._Channels = Array(this._ChannelNames.length);
 
         for (let i = 0; i < this._ChannelNames.length; i++) {
-            let ch_name = _opts.channelsConfig[i];
+            let ch_name = typeof _opts.channelNames[i];
             // объект конфигурации канала
             let ch_config = typeof _opts.channelsConfig == 'object' ? _opts.channelsConfig[ch_name] : {};
 
@@ -283,8 +283,8 @@ class ClassChannelSensor {
         this._Alarms = null;
         if (opts.zones) this.EnableAlarms(opts.zones);
         this.BufferSize = opts.filter ? (opts.filter.bufferSize || 1) : 1;
-        /** ******/
-        this.Address = opts.address;
+        /** mqtt топик ******/
+        this.Address = opts.mqtt ? opts.mqtt.address : `$/Horizon/${Process._BoardName}/${this.Name}`;
         /** ******/
     }
 
@@ -530,10 +530,11 @@ class ClassFilter {
 class ClassTransform {
     constructor(_ch, _opts) {
         this._Channel = _ch;
-        if (_opts) {
-            this.SetLinearFunc(_opts.k, _opts.b);
+        let opts = _opts || {};
+        if (opts.k && opts.b) {
+            this.SetLinearFunc(opts.k, opts.b);
         } else {
-            this._TransformFunc = importFunc(_opts.transformFunc, _ch) || ((x) => x);
+            this._TransformFunc = importFunc(opts.transformFunc, _ch) || ((x) => x);
         }
     }
     /**

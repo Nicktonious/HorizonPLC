@@ -105,7 +105,7 @@ class ClassActuator extends ClassBaseActuator {
         this._Channels = Array(this._ChannelNames.length);
 
         for (let i = 0; i < this._ChannelNames.length; i++) {
-            let ch_name = _opts.channelsConfig[i];
+            let ch_name = _opts.channelNames[i];
             // объект конфигурации канала
             let ch_config = typeof _opts.channelsConfig == 'object' ? _opts.channelsConfig[ch_name] : {};
             this._Channels[i] = new ClassChannelActuator(this, i, ch_config);

@@ -17,6 +17,7 @@
 ### Конфигурация каналов
 <div style = "color: #555">
 Пример полной конфигурации каналов для датчика VL6180:
+
 ```json
 {
     "vl": {
@@ -30,7 +31,9 @@
         ],
         "channelsConfig": {
             "light": {
-                "address": "/Horizon/PLC-11-0",
+                "mqtt": {
+                    "address": "/Horizon/PLC-vl-0"
+                },
                 "transform": {
                     "k": 1,
                     "b": 0
@@ -74,7 +77,7 @@
 - <mark style="background-color: lightblue">_ValueBuffer</mark> - буффера фиксированной длины, в котором сохраняются необработанные показания датчика;
 - <mark style="background-color: lightblue">_DataUpdated</mark> - флаг указывающий на то что сохраненное ранее значение *_Value* уже не является актуальным;
 - <mark style="background-color: lightblue">_DataWasRead</mark> - флаг указывающий на то что последнее актуальное значение *Value* уже было считано и сохранено;
-- <mark style="background-color: lightblue">_Bypass</mark> - флаг, при взведении которого вх. значения будут становиться результирующими в обход мат. обработки;
+- <mark style="background-color: lightblue">_Bypass</mark> - флаг, при взведении которого вх. значения будут становиться результирующими в обход мат. обработки; позволяет сохранять в Value значения не числовых типов;
 - <mark style="background-color: lightblue">_ChangeThreshold</mark> - порог изменения - процент, на который должно измениться Value чтобы SM считал его новым;
 - <mark style="background-color: lightblue">_Sensor</mark> - ссылка на основной объект датчика;
 - <mark style="background-color: lightblue">_ChNum</mark> - номер канала;
