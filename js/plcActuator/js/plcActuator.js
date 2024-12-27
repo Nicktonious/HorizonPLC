@@ -227,8 +227,9 @@ class ClassChannelActuator {
         this._Transform   = new ClassTransform(this, opts.transform);
         this._Suppression = new ClassSuppression(this, opts.suppression);
         this._Status = 0;
-
-        this.Address = opts.address;
+        /** mqtt топик ******/
+        this.Address = opts.mqtt ? opts.mqtt.address : `/Horizon/${Process._BoardName}/${this.Name}`;
+        /** ******/
     }
     get Device() { return this._ThisActuator; }
 

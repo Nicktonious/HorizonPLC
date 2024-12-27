@@ -284,7 +284,7 @@ class ClassChannelSensor {
         if (opts.zones) this.EnableAlarms(opts.zones);
         this.BufferSize = opts.filter ? (opts.filter.bufferSize || 1) : 1;
         /** mqtt топик ******/
-        this.Address = opts.mqtt ? opts.mqtt.address : `$/Horizon/${Process._BoardName}/${this.Name}`;
+        this.Address = opts.mqtt ? opts.mqtt.address : `/Horizon/${Process._BoardName}/${this.Name}`;
         /** ******/
     }
 
