@@ -11,8 +11,7 @@ class ClassRouteREPL {
         this._ReconnectTry = 0;
         this._Port = _opts.port || 23;
         // авто запуск роутинга после полного старта PLC
-        if (_opts.autoRouteOn) 
-            Object.on('complete', this.RouteOn.bind(this));
+        Object.on('complete', this.RouteOn.bind(this));
     }
     /** 
      * @getter 

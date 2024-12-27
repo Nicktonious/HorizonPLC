@@ -31,7 +31,7 @@
 
 Служба указывается в конфигурационном файле **services.json**
 
-*AdvancedOptions* позволяет задать порт TCP-сервера и указать будет ли сервер создан автоматически. Значения по умолчанию: *23* и *false* соответственно. 
+*AdvancedOptions* позволяет задать порт TCP-сервера. Значение по умолчанию: *23*. 
 
 ```json
 "Repl" : {
@@ -40,8 +40,7 @@
     "Importance" : "Primary",
     "InitOrder" : 5,
     "AdvancedOptions" : {
-        "port": 23,
-        "autoRouteOn": true
+        "port": 23
     },
     "Dependency" : ["plcRouteREPL.min.js"],
     "Description" : ""
@@ -87,7 +86,10 @@
 ```js
 H.Repl.Service.RouteOn();
 ```
-Подключение к PLC с помощью утилиты PuTTY
+Подключение к PLC с помощью утилиты PuTTY.
+
+В зависимости от выбранной утилиты подключение может отличаться. Например, в XShell необходимо выбирать протокол не **RAW**, а Telnet. 
+При работе с Telnet через командную строку может наблюдаться дублирование вх. символов.
 
 <div align="center">
     <img src="./ex1_putty.png">
