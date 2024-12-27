@@ -1,5 +1,5 @@
-const ClassSensor   = require('plcSensor');
-const ClassActuator = require('plcActuator');
+const ClassSensor   = require('plcSensor.min.js');
+const ClassActuator = require('plcActuator.min.js');
 
 const POLLING_FREQ = 5;
 /**
@@ -317,7 +317,7 @@ class ClassDeviceManager {
      * @returns {Object} Объект датчика
      */
     CreateDevice(id, opts) {
-        opts = opts || { moduleNum: 0 };
+        // opts = opts || { moduleNum: 0 };
         if (typeof id !== 'string') {
             console.log(`ERROR>> id argument must to be a string`);
             return undefined;
@@ -326,21 +326,21 @@ class ClassDeviceManager {
         let dev = this.Devices.find(d => d.ID === id);
         if (dev) return dev._Channels;
 
-        let sensorConfig = Process.GetDeviceConfig(id);
+        let sensorConfig = opts || Process.GetDeviceConfig(id);
 
         if (!sensorConfig) {
-            console.log(`ERROR>> Failed to get ${id} config"`);
+            H.Logger.Service.Log({ service: 'dm', level: 'E', msg: `Failed to get ${id} config` });
             return undefined;
         }
-
-        // let module = Process.ImportDeviceModule(sensorConfig.name, opts.moduleNum);
-        let module = require(sensorConfig.modules[opts.moduleNum]);
-        if (opts.key) module = module[key];
-        if (!module) {
-            console.log(`ERROR>> Cannot load ${sensorConfig.module}"`);
+        let module;
+        try {
+            module = require(sensorConfig.modules[0]);
+        } catch (e) {
+            H.Logger.Service.Log({ service: 'dm', level: 'E', 
+                msg: `Cannot load ${sensorConfig.modules[0]}` });
             return undefined;
         }
-
+        
         if (sensorConfig.bus) sensorConfig.bus = this.GetBusByID(sensorConfig.bus);
         
         sensorConfig.pins = sensorConfig.pins || [];
@@ -348,13 +348,16 @@ class ClassDeviceManager {
         sensorConfig.id = id;
 
         if (!this.ArePinsAvailable(sensorConfig.pins)) {
-            console.log(`ERROR>> Pins [${opts.pins.join(', ')}] are already used`);
+            H.Logger.Service.Log({ service: 'DM', level: 'E', msg: `Pins [${opts.pins.join(', ')}] are already used` });
             return undefined;
         }
-
-        let device = new module(sensorConfig, sensorConfig);
-        this.AddDevice(device);
-        return device._Channels;
+        try {
+            let device = new module(sensorConfig, sensorConfig);
+            this.AddDevice(device);
+            return device._Channels;
+        } catch (e) {
+            H.Logger.Service.Log({ service: 'DM', level: 'E', msg: `Error creating ${id}: ${e}` });
+        }
     }
     /**
      * @method
