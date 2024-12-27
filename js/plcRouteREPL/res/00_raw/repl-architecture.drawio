@@ -1,0 +1,170 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" version="25.0.3" pages="2">
+  <diagram name="Page 2" id="0">
+    <mxGraphModel style="default-style2">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2" style="graphMlID=n0;gradientDirection=east;shape=rect;glass=1;rounded=1;arcsize=30;shadow=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.0" vertex="1" parent="1">
+          <mxGeometry x="257.3625552365172" y="739.0591276192415" width="165" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="0.0.0" value="RouteREPL" style="text;html=1;spacing=0;align=center;fontFamily=dialog;fontSize=14;fontStyle=0;=center;fontColor=#000000;verticalAlign=bottom" vertex="1" parent="2">
+          <mxGeometry x="43.53466796875" y="21.42431640625" width="77.9306640625" height="21.1513671875" as="geometry" />
+        </mxCell>
+        <mxCell id="3" style="graphMlID=n1;shape=rect;rounded=1;arcsize=30;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.0" vertex="1" parent="1">
+          <mxGeometry x="257.3625552365172" y="529.3549597701848" width="165" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="0.1.0" value="Proxy WS" style="text;html=1;spacing=0;align=center;fontFamily=dialog;fontSize=14;fontStyle=0;=center;fontColor=#000000;verticalAlign=bottom" vertex="1" parent="3">
+          <mxGeometry x="49.38623046875" y="21.42431640625" width="66.2275390625" height="21.1513671875" as="geometry" />
+        </mxCell>
+        <mxCell id="4" style="graphMlID=n2;gradientDirection=east;shape=mxgraph.flowchart.annotation_1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.0" vertex="1" parent="1">
+          <mxGeometry x="509.487611573568" y="529.3549597701847" width="271.37850818074037" height="64.00000000000006" as="geometry" />
+        </mxCell>
+        <mxCell id="0.2.0" value="Обработка сообщений, их подготовка &lt;br/&gt;к передачи на внешние агенты &lt;br/&gt;по LHP-протоколу" style="text;html=1;spacing=0;align=left;fontFamily=dialog;fontSize=14;fontStyle=0;=center;fontColor=#000000;verticalAlign=bottom" vertex="1" parent="4">
+          <mxGeometry x="8.629195496620184" y="4.27294921875" width="254.1201171875" height="55.4541015625" as="geometry" />
+        </mxCell>
+        <mxCell id="5" style="graphMlID=n3;gradientDirection=east;shape=mxgraph.flowchart.annotation_1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.0" vertex="1" parent="1">
+          <mxGeometry x="509.4876115735681" y="646.513083898854" width="271.37850818074025" height="83.11607052592416" as="geometry" />
+        </mxCell>
+        <mxCell id="0.3.0" value="Обмен сообщениями по &lt;br/&gt;програмному интерфейсу" style="text;html=1;spacing=0;align=left;fontFamily=dialog;fontSize=14;fontStyle=0;=center;fontColor=#000000;verticalAlign=bottom" vertex="1" parent="5">
+          <mxGeometry x="49.61405877787013" y="22.406668075462107" width="172.150390625" height="38.302734375" as="geometry" />
+        </mxCell>
+        <mxCell id="6" style="graphMlID=n4;gradientDirection=east;shape=rect;glass=1;rounded=1;arcsize=30;shadow=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.0" vertex="1" parent="1">
+          <mxGeometry x="257.3625552365172" y="895.0542552384829" width="165" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="0.4.0" value="EspruinoREPL" style="text;html=1;spacing=0;align=center;fontFamily=dialog;fontSize=14;fontStyle=0;=center;fontColor=#000000;verticalAlign=bottom" vertex="1" parent="6">
+          <mxGeometry x="34.58642578125" y="21.42431640625" width="95.8271484375" height="21.1513671875" as="geometry" />
+        </mxCell>
+        <mxCell id="7" style="graphMlID=n5;gradientDirection=east;shape=rect;glass=1;rounded=1;arcsize=30;shadow=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.0" vertex="1" parent="1">
+          <mxGeometry x="28.87606908435521" y="743.0591276192415" width="116.22504138867924" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="0.5.0" value="User" style="text;html=1;spacing=0;align=center;fontFamily=dialog;fontSize=14;fontStyle=0;=center;fontColor=#000000;verticalAlign=bottom" vertex="1" parent="7">
+          <mxGeometry x="41.33322381933962" y="17.42431640625" width="33.55859375" height="21.1513671875" as="geometry" />
+        </mxCell>
+        <mxCell id="8" style="graphMlID=n6;gradientDirection=east;shape=mxgraph.flowchart.annotation_1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.0" vertex="1" parent="1">
+          <mxGeometry x="509.4876115735681" y="810.4261677977081" width="271.37850818074025" height="83.11607052592416" as="geometry" />
+        </mxCell>
+        <mxCell id="0.6.0" value="Взаимодействие с REPL &lt;br/&gt;через программную прослойку" style="text;html=1;spacing=0;align=left;fontFamily=dialog;fontSize=14;fontStyle=0;=center;fontColor=#000000;verticalAlign=bottom" vertex="1" parent="8">
+          <mxGeometry x="33.58036737162013" y="22.406668075462107" width="204.2177734375" height="38.302734375" as="geometry" />
+        </mxCell>
+        <mxCell id="9" style="graphMlID=n7;shape=rect;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.0" vertex="1" parent="1">
+          <mxGeometry x="257.3625552365172" y="393.2273176561888" width="165" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="0.7.0" value="WS Server" style="text;html=1;spacing=0;align=center;fontFamily=dialog;fontSize=14;fontStyle=0;=center;fontColor=#000000;verticalAlign=bottom" vertex="1" parent="9">
+          <mxGeometry x="46.662109375" y="21.42431640625" width="71.67578125" height="21.1513671875" as="geometry" />
+        </mxCell>
+        <mxCell id="10" style="graphMlID=n8;shape=rect;rounded=1;arcsize=30;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.0;dashed=1;dashPattern=5 2" vertex="1" parent="1">
+          <mxGeometry x="257.3625552365172" y="190.8525553292999" width="165" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="0.8.0" value="Node-RED" style="text;html=1;spacing=0;align=center;fontFamily=dialog;fontSize=14;fontStyle=0;=center;fontColor=#000000;verticalAlign=bottom" vertex="1" parent="10">
+          <mxGeometry x="46.6552734375" y="21.42431640625" width="71.689453125" height="21.1513671875" as="geometry" />
+        </mxCell>
+        <mxCell id="11" style="graphMlID=n9;gradientDirection=east;shape=mxgraph.flowchart.annotation_1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.0" vertex="1" parent="1">
+          <mxGeometry x="509.4876115735681" y="181.2945200663378" width="271.37850818074025" height="83.11607052592416" as="geometry" />
+        </mxCell>
+        <mxCell id="0.9.0" value="Поток сообщений идет &lt;br/&gt;по wifi на Node-RED" style="text;html=1;spacing=0;align=left;fontFamily=dialog;fontSize=14;fontStyle=0;=center;fontColor=#000000;verticalAlign=bottom" vertex="1" parent="11">
+          <mxGeometry x="57.04130487162013" y="22.40666807546208" width="157.2958984375" height="38.302734375" as="geometry" />
+        </mxCell>
+        <mxCell id="12" style="graphMlID=n10;gradientDirection=east;shape=mxgraph.flowchart.annotation_1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.0" vertex="1" parent="1">
+          <mxGeometry x="509.48761157356796" y="383.66928239322675" width="323.37850818074037" height="83.11607052592416" as="geometry" />
+        </mxCell>
+        <mxCell id="0.10.0" value="Двунаправленный обмен сообщениями &lt;br/&gt;с сервером на контроллере" style="text;html=1;spacing=0;align=left;fontFamily=dialog;fontSize=14;fontStyle=0;=center;fontColor=#000000;verticalAlign=bottom" vertex="1" parent="12">
+          <mxGeometry x="28.480269715370127" y="22.40666807546205" width="266.41796875" height="38.302734375" as="geometry" />
+        </mxCell>
+        <mxCell id="13" value="" style="graphMlID=e0;rounded=0;endArrow=classic;strokeColor=#000000;strokeWidth=1.0;startArrow=none;startFill=1;endFill=1;exitX=0.3140672173033401;exitY=0.9411351966326134;entryX=0.31406721730334014;entryY=0.13306538966934411" edge="1" parent="1" source="3" target="2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="0.11.0" value="Поток &lt;br/&gt;команд" style="text;html=1;spacing=0;align=center;fontFamily=dialog;fontSize=14;fontStyle=0;=center;fontColor=#000000;verticalAlign=bottom" vertex="1" parent="13">
+          <mxGeometry width="51.22265625" height="38.302734375" relative="1" as="geometry">
+            <mxPoint x="76.8637574168498" y="-10.51246096800955" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="14" value="" style="graphMlID=e1;rounded=0;endArrow=classic;strokeColor=#000000;strokeWidth=1.0;startArrow=none;startFill=1;endFill=1;exitX=0.6742200133326495;exitY=0.06289243094934349;entryX=0.6742200133326495;entryY=0.9409195460436894" edge="1" parent="1" source="2" target="3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="0.12.0" value="Поток &lt;br/&gt;сообщений &lt;br/&gt;с REPL" style="text;html=1;spacing=0;align=left;fontFamily=dialog;fontSize=14;fontStyle=0;=center;fontColor=#000000;verticalAlign=bottom" vertex="1" parent="14">
+          <mxGeometry y="-30.318193344845753" width="81.1572265625" height="55.4541015625" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="15" value="" style="graphMlID=e2;rounded=0;endArrow=classic;strokeColor=#000000;strokeWidth=1.0;startArrow=none;startFill=1;endFill=1;exitX=0.3166238543922256;exitY=0.9374756435893481;entryX=0.3166238543922256;entryY=0.06279115024223003" edge="1" parent="1" source="2" target="6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="0.13.0" value="Команды и  &lt;br/&gt;обработанный &lt;br/&gt;ввод" style="text;html=1;spacing=0;align=center;fontFamily=dialog;fontSize=14;fontStyle=0;=center;fontColor=#000000;verticalAlign=bottom" vertex="1" parent="15">
+          <mxGeometry y="-27.791304218750096" width="102.615234375" height="55.4541015625" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="16" value="" style="graphMlID=e3;rounded=0;endArrow=classic;strokeColor=#000000;strokeWidth=1.0;startArrow=none;startFill=1;endFill=1;exitX=0.6647621723438344;exitY=0.06257354491188316;entryX=0.6647621723438344;entryY=0.9374756435893481" edge="1" parent="1" source="6" target="2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="0.14.0" value="Сообщения, &lt;br/&gt;выведенные на &lt;br/&gt;EWI (консоль)" style="text;html=1;spacing=0;align=left;fontFamily=dialog;fontSize=14;fontStyle=0;=center;fontColor=#000000;verticalAlign=bottom" vertex="1" parent="16">
+          <mxGeometry width="109.287109375" height="55.4541015625" relative="1" as="geometry">
+            <mxPoint x="50.00069665194184" y="-57.652173913043505" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="17" value="" style="graphMlID=e4;rounded=0;endArrow=classic;strokeColor=#000000;strokeWidth=1.0;startArrow=none;startFill=1;endFill=1;exitX=0.9999081257343287;exitY=0.5" edge="1" parent="1" source="7" target="2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="0.15.0" value="Пользовательский&lt;br/&gt;ввод" style="text;html=1;spacing=0;align=center;fontFamily=dialog;fontSize=12;fontStyle=0;=center;fontColor=#000000;verticalAlign=bottom" vertex="1" parent="17">
+          <mxGeometry width="107.857421875" height="33.40234375" relative="1" as="geometry">
+            <mxPoint x="-2.6700159999999755" y="21.522022399999965" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="18" value="" style="graphMlID=e5;rounded=0;endArrow=classic;strokeColor=#000000;strokeWidth=1.0;startArrow=classic;startFill=1;endFill=1" edge="1" parent="1" source="9" target="3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="19" value="" style="graphMlID=e6;rounded=0;endArrow=classic;curved=1;strokeColor=#000000;strokeWidth=1.0;startArrow=classic;startFill=1;endFill=1;exitX=0.5;exitY=1" edge="1" parent="1" source="10" target="9">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="309.2604137447405" y="339.82160764375874" />
+              <mxPoint x="370.11202664796633" y="316.89201437587656" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="xP17lk3m4EEJ1U-J8Puc" name="Страница — 2">
+    <mxGraphModel dx="808" dy="435" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="3zp8vPePkYNbnCPVh4Ov-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;startArrow=classic;startFill=1;" edge="1" parent="1" source="66_0C-E9AJE6kDPMGsCH-2" target="66_0C-E9AJE6kDPMGsCH-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3zp8vPePkYNbnCPVh4Ov-7" value="Loopback" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="3zp8vPePkYNbnCPVh4Ov-6">
+          <mxGeometry x="-0.342" relative="1" as="geometry">
+            <mxPoint x="21" y="-10" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="66_0C-E9AJE6kDPMGsCH-2" value="REPL" style="rounded=0;whiteSpace=wrap;html=1;glass=0;" vertex="1" parent="1">
+          <mxGeometry x="360" y="200" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="66_0C-E9AJE6kDPMGsCH-3" value="RouteREPL" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="200" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="66_0C-E9AJE6kDPMGsCH-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;startArrow=classic;startFill=1;" edge="1" parent="1" source="66_0C-E9AJE6kDPMGsCH-4" target="66_0C-E9AJE6kDPMGsCH-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="66_0C-E9AJE6kDPMGsCH-6" value="TCP соединение" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="66_0C-E9AJE6kDPMGsCH-5">
+          <mxGeometry x="0.1946" relative="1" as="geometry">
+            <mxPoint x="12" y="-10" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="66_0C-E9AJE6kDPMGsCH-4" value="Client" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="840" y="200" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="3zp8vPePkYNbnCPVh4Ov-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;startArrow=classic;startFill=1;" edge="1" parent="1" source="3zp8vPePkYNbnCPVh4Ov-1" target="66_0C-E9AJE6kDPMGsCH-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3zp8vPePkYNbnCPVh4Ov-3" value="USB" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="3zp8vPePkYNbnCPVh4Ov-2">
+          <mxGeometry x="0.0712" y="-2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="3zp8vPePkYNbnCPVh4Ov-1" value="Client&lt;br&gt;Web IDE" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="360" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="3zp8vPePkYNbnCPVh4Ov-9" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;Клиенты взаимоисключающие&lt;/h1&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;align=left;" vertex="1" parent="1">
+          <mxGeometry x="600" y="370" width="290" height="70" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
