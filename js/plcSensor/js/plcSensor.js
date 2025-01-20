@@ -284,7 +284,7 @@ class ClassChannelSensor {
         if (opts.zones) this.EnableAlarms(opts.zones);
         this.BufferSize = opts.filter ? (opts.filter.bufferSize || 1) : 1;
         /** mqtt топик ******/
-        this.Address = opts.mqtt ? opts.mqtt.address : `/Horizon/${Process._BoardName}/${this.Name}`;
+        this.Address = opts.mqtt ? opts.mqtt.address : `/Horizon/${Process._BoardName}-${this.Name}`;
         /** ******/
     }
 
@@ -309,6 +309,10 @@ class ClassChannelSensor {
     get Name() {
         return this._Sensor._ChannelNames[this._ChNum];
     }
+
+    get Device() {
+        return this._Sensor;
+    }
     
     /**
      * @getter
@@ -328,6 +332,14 @@ class ClassChannelSensor {
      */
     get ChangeThreshold() { 
         return this._ChangeThreshold || 0; 
+    }
+
+    set ChangeThreshold(_percent) {
+        if (_percent >= 0 && _percent <= 100) {
+            this._ChangeThreshold = _percent;
+            return true;
+        }
+        return false;
     }
     /**
      * @getter
