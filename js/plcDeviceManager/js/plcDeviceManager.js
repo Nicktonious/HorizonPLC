@@ -26,7 +26,8 @@ class ClassDeviceManager {
         // запуск циклического опроса
         Object.on('dm-sub-sensorall', (_msg) => {
             // let freq = _msg.arg[0];
-            this.OnSubSensall();
+            H.Logger.Service.Log({ service: 'DM', level: 'I',  msg: `dm-sub-sensorall` });
+            this.OnSubSensorall(_msg);
             if (!this._Interval) this.StartPolling(POLLING_FREQ);
         });
         // его остановка
@@ -108,10 +109,10 @@ class ClassDeviceManager {
         let value = { sensor: [], actuator: [] };
         
         this.ActuatorChannels.forEach(_ch => {
-            value.sensor.push(`${_ch.Device._Article}-${ch.ID}`);
+            value.sensor.push(`${_ch.Device._Article}-${_ch.ID}`);
         });
         this.SensorChannels.forEach(_ch => {
-            value.actuator.push(`${_ch.Device._Article}-${ch.ID}`);
+            value.actuator.push(`${_ch.Device._Article}-${_ch.ID}`);
         });
         return value;
     }
@@ -130,13 +131,12 @@ class ClassDeviceManager {
                 for (let option of Object.keys(opts)) {
                     if (option !== 'bitrate') opts[option] = this.GetPinByStr(opts[option]);
                 }
-                let busObj;
-                if (busName.startsWith('I2C')) busObj = H.I2Cbus.Service.AddBus(opts);
-                if (busName.startsWith('SPI')) busObj = H.SPIbus.Service.AddBus(opts);
-                if (busName.startsWith('UART')) busObj = H.UARTbus.Service.AddBus(opts);
+                if (busName.startsWith('I2C')) H.I2Cbus.Service.AddBus(opts);
+                if (busName.startsWith('SPI')) H.SPIbus.Service.AddBus(opts);
+                if (busName.startsWith('UART')) H.UARTbus.Service.AddBus(opts);
 
             } catch (e) {
-                H.Logger.Log({ service: 'dm', level: 'E',  msg: `Failed to init bus ${busname}` });
+                H.Logger.Service.Log({ service: 'DM', level: 'E',  msg: `Failed to init bus ${busName}: ${e}` });
             }
         }
     }  
@@ -233,7 +233,7 @@ class ClassDeviceManager {
         this.SendWS(msg);
     }
 
-    OnSubSensall(_msg) {
+    OnSubSensorall(_msg) {
         let source = _msg.metadata ? _msg.metadata.source ? _msg.metadata.source : undefined : undefined;
         if (!source) return;
         let msg = {
@@ -319,7 +319,7 @@ class ClassDeviceManager {
     CreateDevice(id, opts) {
         // opts = opts || { moduleNum: 0 };
         if (typeof id !== 'string') {
-            console.log(`ERROR>> id argument must to be a string`);
+            // console.log(`ERROR>> id argument must to be a string`);
             return undefined;
         }
 
@@ -329,14 +329,14 @@ class ClassDeviceManager {
         let sensorConfig = opts || Process.GetDeviceConfig(id);
 
         if (!sensorConfig) {
-            H.Logger.Service.Log({ service: 'dm', level: 'E', msg: `Failed to get ${id} config` });
+            H.Logger.Service.Log({ service: 'DM', level: 'E', msg: `Failed to get ${id} config` });
             return undefined;
         }
         let module;
         try {
             module = require(sensorConfig.modules[0]);
         } catch (e) {
-            H.Logger.Service.Log({ service: 'dm', level: 'E', 
+            H.Logger.Service.Log({ service: 'DM', level: 'E', 
                 msg: `Cannot load ${sensorConfig.modules[0]}` });
             return undefined;
         }
