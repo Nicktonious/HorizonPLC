@@ -64,7 +64,9 @@
 <div style = "color: #555">
 
 - <mark style="background-color: lightblue">RouteOn()</mark> - инициирует перехват консоли, инициализацию некоторых обработчиков событий;
-- <mark style="background-color: lightblue">RouteOff()</mark> - возвращает работу консоли в состояние по умолчанию (как при самом запуске PLC).
+- <mark style="background-color: lightblue">RouteOff()</mark> - возвращает работу консоли в состояние по умолчанию (как при самом запуске PLC);
+- <mark style="background-color: lightblue">SendFile(_fileName)</mark> - выполняет отправку файла, расположенного в Storage по отрытому tcp-соединению;
+
 </div>
 
 ### Принцип перехвата консоли
