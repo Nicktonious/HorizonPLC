@@ -99,11 +99,11 @@ class ClassProxyMQTT {
                 return;
             }
             if (++c == 3) {
-                H.Logger.Service.Log('MQTT', H.Logger.Service.LogLevel.INFO, `MQTT failed to reconnect after ${c} retries.`);
                 clearInterval(interval);
+                H.Logger.Service.Log({ service: 'MQTT', level: 'I', msg: `MQTT failed to reconnect after ${c} retries.` });
                 return;
             }
-            H.Logger.Service.Log('MQTT', H.Logger.Service.LogLevel.INFO, `MQTT trying to reconnect..`);
+            H.Logger.Service.Log({ service: 'MQTT', level: 'I', msg: `MQTT trying to reconnect..` });
             this._MQTT.connect();
         }, 5000);
     }
