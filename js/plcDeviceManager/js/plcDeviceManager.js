@@ -131,6 +131,7 @@ class ClassDeviceManager {
                 for (let option of Object.keys(opts)) {
                     if (option !== 'bitrate') opts[option] = this.GetPinByStr(opts[option]);
                 }
+                opts.name = busName;
                 if (busName.startsWith('I2C')) H.I2Cbus.Service.AddBus(opts);
                 if (busName.startsWith('SPI')) H.SPIbus.Service.AddBus(opts);
                 if (busName.startsWith('UART')) H.UARTbus.Service.AddBus(opts);
