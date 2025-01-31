@@ -9,12 +9,13 @@ const EON = '>>$>';
  */
 class ClassRouteREPL {
     constructor(_opts) {
-        _opts = _opts || {};                         
+        _opts = _opts || {};
         this._DefConsole = eval(E.getConsole()); // eval позволяет хранить инициализированный объект UART шины. Это необходимо для работы с его функционалом из класса Route   
-        this._IsOn = false;     
+        this._IsOn = false;
         this._Name = 'RouteREPL';
         this._ReconnectTry = 0;
         this._Port = _opts.port || 23;
+        this._Logging = _opts.logging;
         this.USBIsActive = false;
         this._Sending = false;
         // авто запуск роутинга после полного старта PLC
@@ -27,7 +28,7 @@ class ClassRouteREPL {
     get ConsoleType() {
         let cons = E.getConsole();
         return (!cons) ? 'NONE' :
-                cons.startsWith('Loopback') || cons == 'Telnet' ? 'REMOTE' : 'USB';
+            cons.startsWith('Loopback') || cons == 'Telnet' ? 'REMOTE' : 'USB';
     }
     /**
      * @method
@@ -46,10 +47,24 @@ class ClassRouteREPL {
                         // возврат стандартной консоли если не появился новый сокет
                         if (!this._Socket) this.RouteOff();
                     }, 50);
-                })
+                });
+                // код для имплементации логирования сообщений
+                /*let s = {
+                    write: (d) => {
+                        if (_socket) _socket.write(d);
+                        else this.RouteOff();
+                        if (client) client.send(d, 5059, '192.168.1.76');
+                        // if (d.includes('\r')) H.Logger.Service.Log({ service: 'Repl', level: 'I', msg: this.buffer.toString() });
+                        return d;
+                    }
+                };
+                let client = require('dgram').createSocket('udp4');
                 // перехват и перенаправление консоли на сокет
+                E.pipe(_socket, LoopbackB, { end: false });
+                E.pipe(LoopbackB, s, { end: false }); */
                 _socket.pipe(LoopbackB);
-                LoopbackB.pipe(_socket);
+                LoopbackB.pipe(this._Socket);
+
                 E.setConsole(LoopbackA, { force: false });   //Перехватываем консоль
             });
             this._Server.listen(this._Port);
@@ -99,14 +114,14 @@ class ClassRouteREPL {
             let socketHandler = _data => {
                 let sof = _data.indexOf(SOF);    // начало файла
                 let eof = _data.indexOf(EOF);    // конец файла
-                _data = _data.slice(sof != -1 ? sof+SOF.length: 0, eof ==-1 ? _data.length : eof);
+                _data = _data.slice(sof != -1 ? sof + SOF.length : 0, eof == -1 ? _data.length : eof);
 
                 require('Storage').write(_fileName, _data, offset, _fileSize);
                 // чтение файла завершено
                 if (eof > -1) {
                     this._Socket.removeListener('data', socketHandler);
                     E.setConsole(LoopbackA);
-                    H.Logger.Log({ service: 'Repl', level: 'I', msg: `Uploaded new file over TCP: ${_fileName} with ${_fileName} bytes `});
+                    H.Logger.Log({ service: 'Repl', level: 'I', msg: `Uploaded new file over TCP: ${_fileName} with ${_fileName} bytes ` });
                     res();
                 }
                 offset += _data.length;
@@ -129,7 +144,7 @@ class ClassRouteREPL {
      * @returns Возвращает список файлов в хранилище
      */
     GetFileList() {
-        return require('Storage').list(undefined, { sf:false });
+        return require('Storage').list(undefined, { sf: false });
     }
     /**
      * @method
@@ -150,7 +165,7 @@ class ClassRouteREPL {
      */
     SendFiles(_args) {
         // указание отправить все доступные файлы
-        if (_args == '*') 
+        if (_args == '*')
             _args = this.GetFileList();
         // если получен массив, то поочередно выполняется отправка указанных файлов
         if (Array.isArray(_args) && _args.length > 0) {
@@ -177,23 +192,23 @@ class ClassRouteREPL {
                 file = require("Storage").read(_fileName);
                 if (!file) throw new Error(`Failed to read ${_fileName}`);
             } catch (e) {
-                H.Logger.Service.Log({ service: this._Name, level: 'E', msg: `Error while sending ${_fileName} file via TCP: ${e.message}`}); 
+                H.Logger.Service.Log({ service: this._Name, level: 'E', msg: `Error while sending ${_fileName} file via TCP: ${e.message}` });
                 rej();
-                return; 
+                return;
             }
             this._Sending = true;
             setTimeout(() => {
-                this._Socket.write(`${SON}${JSON.stringify({fn:_fileName})}${EON}`);
+                this._Socket.write(`${SON}${JSON.stringify({ fn: _fileName })}${EON}`);
                 this._Socket.write(SOF);
-                E.pipe(file, this._Socket, { 
+                E.pipe(file, this._Socket, {
                     end: false,
-                    chunkSize: 64, 
-                    complete:() => {
+                    chunkSize: 64,
+                    complete: () => {
                         this._Socket.write(EOF);
                         this._Sending = false;
                         // E.setConsole(LoopbackA, { force: false });
                         // H.Logger.Service.Log({ service: 'Repl', level: 'I', msg: `Sent file over TCP: ${_fileName} `});
-                        setTimeout(res, 500); 
+                        setTimeout(res, 500);
                     }
                 });
             }, 250);
