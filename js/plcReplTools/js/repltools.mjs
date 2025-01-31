@@ -322,9 +322,45 @@ class HorizonTools {
 
         socket.on('close', () => process.exit());
     }
+    /**
+     * @method
+     * @description Инициирует удаление файла на PLC
+     * @param {string} _fileName 
+     * @returns 
+     */
+    async EraseFile(_fileName) {
+        let fileList = await this.GetFileList() ?? [];
+        if (!fileList.includes(_fileName)) {
+            console.warn(`Файл ${_fileName} отсутствует, невозможно удалить`);
+            return false;
+        }
+        await sleep(20);
+        await this.#EraseFile_Wrapped(_fileName);
+        await sleep(100);
+        fileList = await this.GetFileList();
+        if (fileList.includes(_fileName)) {
+            console.warn(`Не удалось удалить ${_fileName}`);
+            return false;
+        }
+        console.log(`${_fileName} успешно удалён`);
+        return true;
+    }
+
+    async #EraseFile_Wrapped(_fileName) {
+        return new Promise((res, rej) => {
+            try {
+                let socket = this.#CreateConnection();
+                socket.once('connect', async () => {
+                    socket.write(`\r\nrequire('Storage').erase('${_fileName}')\r\n`);
+                    socket.end();
+                    res();
+                });
+                socket.once('connectionAttemptFailed', rej);
+            } catch (e) {
+                rej(e);
+            }
+        });
+    }
 }
 
 export default HorizonTools;
-
-// let tools = new HorizonTools({ host: '192.168.1.71', port: 23 }).DownloadFile('plcProcess.min.js');
-// let tools = new HorizonTools({ host: '192.168.1.106', port: 23 }).UploadFile('l2.txt', 'testupload');

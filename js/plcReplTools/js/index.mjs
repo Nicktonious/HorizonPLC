@@ -1,4 +1,4 @@
-import HorizonTools from "./hrztools.mjs";
+import HorizonTools from "./repltools.mjs";
 
 const DFLT_PORT = 23;
 /**
@@ -7,20 +7,28 @@ const DFLT_PORT = 23;
  * @returns {object}
  */
 const getAppArgs = () => {
-    const args = process.argv.slice(2); // Убираем первые два аргумента: "node" и имя скрипта
+    const args = process.argv.slice(2); // Убираем первые два аргумента
     const parsedArgs = {};
+    let currentKey = null;
 
     for (let i = 0; i < args.length; i++) {
         if (args[i].startsWith('-')) {
-            parsedArgs[args[i].replace('-', '')] = args[i + 1];
-            i++; // Пропускаем значение
+            currentKey = args[i].replace('-', '');
+            parsedArgs[currentKey] = []; // Создаем массив для хранения значений
+        } else if (currentKey) {
+            parsedArgs[currentKey].push(args[i]); // Добавляем значение в массив
         }
     }
 
-    // Пример запуска: node index.js -host 192.168.1.110 -upload fileToUploadName
-    // Результат: { host: '192.168.1.110', upload: 'fileToUploadName' }
+    // Преобразуем массивы с одним элементом в строку (как раньше)
+    Object.keys(parsedArgs).forEach(key => {
+        if (parsedArgs[key].length === 1) {
+            parsedArgs[key] = parsedArgs[key][0];
+        }
+    });
+
     return parsedArgs;
-}
+};
 /**
  * @function
  * @description Парсит аргумент формата 192.168.1.1:23 в { host, port }
@@ -37,9 +45,11 @@ let connOpts = getConnOpts(args.host);
 
 let app = new HorizonTools(connOpts);
 if (args.download)
-    app.DownloadFile(args.download);
+    app.DownloadFile(args.download, args.path);
 else if (args.upload)
     app.UploadFile(args.upload);
 else if (args.fileList)
-    app.GetFileList(false, true);
+    app.GetFileList(args.path, true);
+else if (args.erase) 
+    app.EraseFile(args.erase);
 else app.RouteRepl();
