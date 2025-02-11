@@ -2,12 +2,15 @@ import net, { Socket } from 'net';
 import fs from 'fs';
 import path from 'path';
 import { findNonEmptyFiles } from './utils.mjs';
+import LoggingStream from './loggingStream.mjs';
+import ClassLogger from './plcLogger.mjs';
 
-const GET_LIST_TIMEOUT = 5000;
+const GET_LIST_TIMEOUT = 2500;
 const UPLOAD_PERIOD = 50;
 const CHUNKSIZE_UPL = 64;
-const MAX_TIME_NO_RECEIVE = 2000;
-const SLEEP_AFTER_ERR_UPL = 5000;
+const MAX_TIME_NO_RECEIVE = 2500;
+const SLEEP_AFTER_ERR_UPL = 2000;
+const SLEEP_AFTER_GET_LIST = 100;
 
 const DWNLD_DFLT_PATH = './temp_from_plc';
 
@@ -22,6 +25,12 @@ class HorizonTools {
     constructor(_connectOpts) {
         // { host: '192.168.1.71', port: 23 }
         this._connectOpts = _connectOpts;
+        try {
+            // const ClassLogger = cjsrequire('../../plcLogger/js/plcLogger.js'); 
+            this._logger = new ClassLogger();
+        } catch (e) {
+            this._logger = null;
+        }
     }
     /**
      * @method
@@ -63,53 +72,75 @@ class HorizonTools {
      * @param {string} _data 
      * @returns {}
      */
-    #ParseFileText(_data) {
-        let sof = _data.indexOf(SOF);
+    #DownloadFile_ProcessText(_data) {
         let eof = _data.indexOf(EOF);
-        return { 
-            data: _data.slice(
-                sof == -1 ? 0 : sof+SOF.length,
-                eof == -1 ? _data.length : eof
-            ), 
-            sof, 
-            eof 
-        };
+        let sof = _data.indexOf(SOF);
+        if (sof > eof && eof != -1) sof = -1;
+        // текст обрезается либо по EOF последовательности (1),
+        // либо за EOF.length-1=3 символа до конца (2)
+        let dataCut = _data.slice(
+            sof == -1 ? 0 : sof+SOF.length,
+            _data.endsWith(SOF) ? _data.length : eof == -1 ? _data.length-EOF.length+1 : eof
+        );
+        // если (1) то tail - текст после EOF
+        // если (2) то tail - последние 3 символа  
+        const tail = _data.endsWith(SOF) ? '' : eof == -1 ? _data.slice(_data.length-EOF.length+1) : _data.slice(eof+EOF.length);
+        // const end = eof > -1;
+        return { eof, sof, data: dataCut, tail };
     }
     /**
      * @method
      * @description Обработчик 'data' сокета при скачивании файла. Проверяет наличие SOF и EOF при приеме данных.
      * @param {Buffer} _chunk 
      */
-    #DownloadFile_OnData(_chunk, _savePath, resolveCb) {
+    async #DownloadFile_OnData(_savePath, resolveCb, _chunk) {
         if (this.downloadTimeout) clearTimeout(this.downloadTimeout);
-        this.downloadTimeout = setTimeout(resolveCb, MAX_TIME_NO_RECEIVE);
+        this.downloadTimeout = setTimeout(() => {
+            if (this.tail?.length) {
+                this.#DownloadFile_OnData('', _savePath, resolveCb);
+                clearTimeout(this.downloadTimeout);
+            }
+            else setTimeout(() => { if (!this.socket.destroyed) 
+                this.socket.end();
+                resolveCb(); 
+            }, MAX_TIME_NO_RECEIVE);
+        }, MAX_TIME_NO_RECEIVE);
 
-        const data = (this.tail ?? '') + _chunk.toString(); // Преобразуем данные в строку
-        let sof = data.indexOf(SOF);
-        let eof = data.indexOf(EOF);
-        if (!this.isWriting) {
-            let fn = this.#DownloadFile_ParseFileName(data);
+        let text = (this.tail??'')+_chunk.toString();
+        let { sof, eof, data, tail } = this.#DownloadFile_ProcessText(text);
+        this.tail = tail;
+        if (!this.writeStream || this.writeStream.ending) {
+            let fn = this.#DownloadFile_ParseFileName(text);
             if (!fn) return;
             this.writeStream = fs.createWriteStream(`${_savePath}/${fn}`);
             this.writeStream.name = fn;
+
             console.log(`Начало записи файла ${fn}`);
         }
-        if (sof !== -1 || this.isWriting) {
-            let dataCut = data.slice(
-                sof == -1 ? 0 : sof+SOF.length,
-                eof == -1 ? data.length : eof
-            );
-            this.writeStream.write(dataCut, () => {
-                if (eof != -1) {
-                    this.isWriting = false;
-                    this.tail = data.split(eof)[1];
-                    this.writeStream.end(() => {
-                        console.log(`Окончание записи файла ${this.writeStream?.name}`);
+        let ending = eof != -1 || _chunk == '';
+        if (ending) this.writeStream.ending = true;
+        this.#DownloadFile_Write(this.writeStream, data, ending);
+    }
+    /**
+     * 
+     * @param {WritableStream} _ws 
+     * @param {string} _data 
+     * @param {boolean} end 
+     * @returns 
+     */
+    #DownloadFile_Write(_ws, _data, end) {
+        return new Promise((res, rej) => {
+            let { name } = this.writeStream; 
+
+            _ws.write(_data, () => {
+                if (end) {
+                    _ws.end(() => {
+                        console.log(`Окончание записи файла ${_ws?.name}`);
+                        res();
                     });
-                }
+                } else res();
             });
-            this.isWriting = true;
-        }
+        });
     }
 
     #CreateConnection() {
@@ -126,24 +157,53 @@ class HorizonTools {
      * @param {string | [string]} _fileNameList 
      */
     async DownloadFile(_fileNameList, _path = DWNLD_DFLT_PATH) {
-        // TODO: создание директории _path если она не сущетсвует
+        // TODO: создание директории _path если она не сущеcтвует
         if (!Array.isArray(_fileNameList)) _fileNameList = [_fileNameList];
-        const list = await this.GetFileList(); // Список всех файлов
+        let list = await this.GetFileList(); // Список всех файлов
+        if (_fileNameList[0] != '*') {
+            let nonExistFiles = _fileNameList.filter(_fn => !list.includes(_fn));
+            if (nonExistFiles.length) console.error(`На PLC нет файлов ${nonExistFiles} для удаления`);
+            return;
+        }
         await this.#DownloadFile_Wrapped(_fileNameList, _path);
-
-        if (_fileNameList[0] == '*') {
-            // проверка кол-ва загруженных файлов
-            let notFoundList = await this.GetNotDownloadedFiles(_path, list);
+        // проверка кол-ва загруженных файлов
+        let notFoundList = await this.GetNotDownloadedFiles(_path, _fileNameList[0] == '*' ? list : _fileNameList);
+        let triesLeft = 3
+        // TODO: убрать filter
+        while (notFoundList.filter(_fn => _fn!='plcRouteREPL.min.js').length && triesLeft-- > 0) {
             console.log(`Не удалось скачать следующие файлы: ${notFoundList}`);
-            let triesLeft = 3;
-            // TODO: если не удалось скачать список файлов
-            // пока остаются не скачанные файлы
-            /*while (notFoundList.length && triesLeft-- > 0) {
-                console.log(`Не удалось загрузить следующие файлы: ${notFoundList.join('\n')}`);
-                console.log(`Новый запрос...`);
-                await this.#DownloadFile_Wrapped(notFoundList, _path);
-                notFoundList = await this.GetNotDownloadedFiles(_path, list);
-            }*/
+            console.log(`Новый запрос...`);
+            await this.#DownloadFile_Wrapped(notFoundList, _path);
+            notFoundList = await this.GetNotDownloadedFiles(_path, list);
+            await sleep(100);
+        }
+        if (notFoundList?.length) console.log(`Не удалось скачать следующие файлы: ${notFoundList}`);
+    }
+    /**
+     * NOT USED YET
+     * @param {*} _fileNameList 
+     * @param {*} _path 
+     */
+    async DownloadFiles(_fileNameList, _path = DWNLD_DFLT_PATH) {
+        if (!Array.isArray(_fileNameList)) _fileNameList = [_fileNameList];
+        let list = await this.GetFileList(); // Список всех файлов
+        // TODO: создание директории _path если она не сущеcтвует
+        let tries = 0;
+        let success = false;
+        while (tries < 3 && !success) {
+            for await (const _fn of _fileNameList) {
+                try {
+                    await this.#DownloadFile_Wrapped([_fn], _path);
+                    // проверка кол-ва загруженных файлов
+                    let notFoundList = await this.GetNotDownloadedFiles(_path, _fileNameList[0] == '*' ? list : _fileNameList);
+
+                    if (notFoundList?.length) console.log(`Не удалось скачать следующие файлы: ${notFoundList}`);
+                    else success = true;
+                } catch (e) {
+                    console.error(e);
+                }
+                tries++;
+            }
         }
     }
 
@@ -155,20 +215,20 @@ class HorizonTools {
             const startCom = this.DownloadFile_GetStartCommand(_fileNameList);
             this.socket.write(startCom);
             // Обработка данных от клиента
-            // let anotherFileDownloadedCb = (_fn) => {}
-            const handler = this.#DownloadFile_OnData.bind(this);
-            this.socket.on('data', _data => handler(_data, _savePath, res));
+            // const handler = this.#DownloadFile_OnData.bind(this);
+            this.socket.on('data', d => this.#DownloadFile_OnData(_savePath, res, d));
 
             // Обработка закрытия соединения
             this.socket.on('end', () => {
-                console.log('Клиент отключился.');
-                if (this.isWriting) {
+                console.log('Передача данных завершена.');
+                if (!this.writeStream.closed) {
                     console.warn('Соединение закрыто до завершения записи файла!');
                 }
                 // this.writeStream?.end(); // Закрываем файл
             });
             this.socket.once('close', () => {
                 console.log('Подключение закрыто');
+                res();
             });
 
             // Обработка ошибок
@@ -177,6 +237,17 @@ class HorizonTools {
                 rej();
             });
         });
+    }
+    #DownloadFile_CheckTimeout() {
+        if (this.downloadTimeout) clearTimeout(this.downloadTimeout);
+        this.downloadTimeout = setTimeout(() => {
+            if (this.tail?.length) {
+                this.#DownloadFile_OnData('', _savePath, resolveCb);
+                clearTimeout(this.downloadTimeout);
+                setTimeout(() => { if (!this.socket.destroyed) this.socket.end() }, MAX_TIME_NO_RECEIVE);
+            }
+            else resolveCb();
+        }, MAX_TIME_NO_RECEIVE);
     }
     /**
      * @method
@@ -200,7 +271,7 @@ class HorizonTools {
                     if (++errCount == 5) break;
                     console.log(`Ошибка при отправке ${_filePath}: ${e}`);
                     await sleep(SLEEP_AFTER_ERR_UPL);
-                    console.log(`продолжение отправки ${_filePath}`);
+                    console.log(`Продолжение отправки ${_filePath}`);
                     continue;
                     // await this.#UploadFile_Wrapped(filePath, path.basename(filePath));
                 }
@@ -272,9 +343,11 @@ class HorizonTools {
             let list = await this.#GetFileList_Wrapped();
             if (print) console.log(list.join('\n'));
             if (_fileName) fs.writeFileSync(_fileName, list.join('\n'), 'utf-8');
+            await sleep(SLEEP_AFTER_GET_LIST);
             return list;
         } catch (e) {
             console.log(`Не удалось получить список файлов: ${e}`);
+            await sleep(SLEEP_AFTER_GET_LIST);
         }
     }
 
@@ -285,9 +358,12 @@ class HorizonTools {
             let tail = '';
             let socket = this.#CreateConnection();
             socket.write(this.GetFileList_GetStartCommand());
+            // let data = '';
+            // while (!(data=socket.read()))
 
             socket.on('data', _data => {
                 let data = _data.toString();
+                // console.log(data);
                 let sof = data.indexOf(SOF);
                 let eof = data.indexOf(EOF);
                 isWriting = isWriting || sof != -1;
@@ -299,6 +375,7 @@ class HorizonTools {
                 );
                 let newFiles = (tail + data).split(', ');
                 tail = newFiles.at(-1) ?? '';
+                newFiles.pop();
                 fileNameList.push(...newFiles);
                 if (eof > -1) {
                     // все данные получены
@@ -315,12 +392,19 @@ class HorizonTools {
      * @method
      * @description Выполняет подключение к консоли
      */
-    RouteRepl() {
-        let socket = this.#CreateConnection();
-        socket.pipe(process.stdout);
-        process.stdin.pipe(socket);
+    async RouteRepl() {
+        return new Promise((res, rej) => {
+            let sessionID = new Date().getTime();
+            const logFunc = this._logger ? ({msg, obj}) => this._logger.Log({ service: 'Repl', msg, obj, level: 'I' }) : (() => {});
+            let logStream = new LoggingStream(logFunc, sessionID); 
 
-        socket.on('close', () => process.exit());
+            let socket = this.#CreateConnection();
+            socket.pipe(logStream).pipe(process.stdout);
+            process.stdin.pipe(socket);
+
+            socket.once('error', rej);
+            socket.once('close', res);
+        });
     }
     /**
      * @method
@@ -329,14 +413,13 @@ class HorizonTools {
      * @returns 
      */
     async EraseFile(_fileName) {
-        let fileList = await this.GetFileList() ?? [];
+        let fileList = await this.GetFileList();
         if (!fileList.includes(_fileName)) {
             console.warn(`Файл ${_fileName} отсутствует, невозможно удалить`);
             return false;
         }
-        await sleep(20);
         await this.#EraseFile_Wrapped(_fileName);
-        await sleep(100);
+        // await sleep(100); CHECK IF ERR
         fileList = await this.GetFileList();
         if (fileList.includes(_fileName)) {
             console.warn(`Не удалось удалить ${_fileName}`);
@@ -352,8 +435,7 @@ class HorizonTools {
                 let socket = this.#CreateConnection();
                 socket.once('connect', async () => {
                     socket.write(`\r\nrequire('Storage').erase('${_fileName}')\r\n`);
-                    socket.end();
-                    res();
+                    socket.end(res);
                 });
                 socket.once('connectionAttemptFailed', rej);
             } catch (e) {
