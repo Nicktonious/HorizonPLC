@@ -11,7 +11,7 @@ class LoggingStream extends Transform {
 
     Log(type, _txtMsg) {
         this._Log?.({
-            obj: { metadata: { type, count: this.I, sessionID: this._sessionID }, msg: _txtMsg },
+            obj: { metadata: { type, count: this.I, sessionID: this._sessionID, user: process.env.USERNAME }, msg: _txtMsg },
             msg: _txtMsg
         });
     }
