@@ -41,7 +41,7 @@
 "SensorPLC": {
     "name": "SensorPLC",
     "pollFreq": 1,      // частота опроса
-    "article": '02-501-0204-201-0514',
+    "article": "02-501-0204-201-0514",
     "channelNames": [
         "PLC_temperature",
         "PLC_worktime",
