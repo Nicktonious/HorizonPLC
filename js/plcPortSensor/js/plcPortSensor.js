@@ -9,12 +9,13 @@ const INPUT_PIN_MODES = ['analog', 'input', 'input_pullup', 'input_pulldown', 'a
 class ClassPortSensor extends ClassSensor {
     constructor(opts) {
         ClassSensor.call(this, opts);
+        this._TypeInSignals = opts.typeInSignals;
         // Кол-во портов (_Pins) обязано быть равно _QuantityChannel
         if (this._ChannelNames.length !== this._Pins.length)
             throw new Error('QuantityChannel must be equal to pins count');
         // Тип сигнала определяет команду чтения с порта
         if (!Array.isArray(this._TypeInSignals) || this._TypeInSignals.length !== this._ChannelNames.length)
-            throw new Error('_TypeInSignals must be an array length of _QuantityChannel');
+            throw new Error('_TypeInSignals must be an array length of _ChannelNames');
         // Порты конфигурируются либо согласно конфигу либо в зависимости от _TypeInSignal
         if (opts.pinModes) {
             // Установка режимов согласно конфигу
@@ -23,7 +24,11 @@ class ClassPortSensor extends ClassSensor {
             });
         } else {
             // Конфигурация по умолчанию
-            this._Pins.forEach((_pin, i) => {_pin.mode('output');});
+            this._Pins.forEach((_pin, i) => {
+                _pin.mode(
+                    (this._TypeInSignals[i] == 'analog') ? 'analog' : 'output'
+                );
+            });
         }
     }
     /**
