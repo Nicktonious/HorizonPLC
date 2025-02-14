@@ -25,12 +25,7 @@ class HorizonTools {
     constructor(_connectOpts) {
         // { host: '192.168.1.71', port: 23 }
         this._connectOpts = _connectOpts;
-        try {
-            // const ClassLogger = cjsrequire('../../plcLogger/js/plcLogger.js'); 
-            this._logger = new ClassLogger();
-        } catch (e) {
-            this._logger = null;
-        }
+        this._logger = null;
     }
     /**
      * @method
@@ -392,15 +387,27 @@ class HorizonTools {
      * @method
      * @description Выполняет подключение к консоли
      */
-    async RouteRepl() {
+    async RouteRepl(_logOpts) {
         return new Promise((res, rej) => {
-            let sessionID = new Date().getTime();
-            const logFunc = this._logger ? ({msg, obj}) => this._logger.Log({ service: 'Repl', msg, obj, level: 'I' }) : (() => {});
-            let logStream = new LoggingStream(logFunc, sessionID); 
-
             let socket = this.#CreateConnection();
-            socket.pipe(logStream).pipe(process.stdout);
-            process.stdin.pipe(socket);
+            if (_logOpts) {
+                // инициализация логгера
+                _logOpts.server = _logOpts.host;
+                this._logger = new ClassLogger(_logOpts);
+                // создание идентификатора сессии
+                let sessionID = new Date().getTime();
+                // в поток от сокета с stout передается log-функция, которая будет вызывать logger.Log с некоторыми предустановленными аргументами
+                const logFunc = ({ msg, obj }) => this._logger.Log({ service: 'Repl', msg, obj, level: 'I' });
+                let logStream = new LoggingStream(logFunc, sessionID); 
+    
+                socket.pipe(logStream).pipe(process.stdout);
+                process.stdin.pipe(socket);
+
+            } else {
+                // стандартный перехват консоли
+                socket.pipe(process.stdout);
+                process.stdin.pipe(socket);
+            }
 
             socket.once('error', rej);
             socket.once('close', res);
