@@ -1,6 +1,5 @@
 import dgram from 'node:dgram';
 import { getSystemTime } from './utils.mjs';
-
 /**
  * @class
  * @description Транспортный класс, предоставляющий функционал
@@ -21,7 +20,7 @@ class GrayLogTransport {
     constructor(options) {
         this.server = options.server || '192.168.50.251';
         this.port = options.port || 5142;
-        this.source = options.hostname || Process._BoardName;
+        this.source = options.hostname;
         this.facility = options.facility || 'HorizonPLC';
         this.bufferSize = options.bufferSize || 1350;
         this.msg = {
