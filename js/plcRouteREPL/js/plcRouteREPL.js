@@ -3,6 +3,22 @@ const EOF = '>> >';
 const SON = '<<$<';
 const EON = '>>$>';
 
+function pipe(_fn, _dest, _opts) {
+    let offset = 0;
+    let l = require("Storage").read(_fn).length;
+    let interval = setInterval(() => {
+        // let str = require("Storage").read(_fn, offset, _opts.chunkSize);
+        if (!_dest.conn || offset >= l /*!str.length*/) {
+            clearInterval(interval);
+            if (_opts.complete) _opts.complete();
+            if (_opts.end && _dest) _dest.end();
+            return;
+        }
+        _dest.write(require("Storage").read(_fn, offset, _opts.chunkSize));
+        offset += _opts.chunkSize;   
+        // delete str;
+    }, 50);
+}
 /**
  * @class
  * Класс предоставляет возможность удаленного подключения к консоли по TCP-соединению.
@@ -15,8 +31,6 @@ class ClassRouteREPL {
         this._Name = 'RouteREPL';
         this._ReconnectTry = 0;
         this._Port = _opts.port || 23;
-        this._Logging = _opts.logging;
-        this.USBIsActive = false;
         this._Sending = false;
         // авто запуск роутинга после полного старта PLC
         Object.on('complete', this.RouteOn.bind(this));
@@ -26,9 +40,7 @@ class ClassRouteREPL {
      * Возвращает тип текущего подключения к консоли: NONE, USB или REMOTE
      */
     get ConsoleType() {
-        let cons = E.getConsole();
-        return (!cons) ? 'NONE' :
-            cons.startsWith('Loopback') || cons == 'Telnet' ? 'REMOTE' : 'USB';
+        return this._IsOn ? 'Telnet' : E.isUSBConnected() ? 'USB' : 'NONE';
     }
     /**
      * @method
@@ -48,20 +60,7 @@ class ClassRouteREPL {
                         if (!this._Socket) this.RouteOff();
                     }, 50);
                 });
-                // код для имплементации логирования сообщений
-                /*let s = {
-                    write: (d) => {
-                        if (_socket) _socket.write(d);
-                        else this.RouteOff();
-                        if (client) client.send(d, 5059, '192.168.1.76');
-                        // if (d.includes('\r')) H.Logger.Service.Log({ service: 'Repl', level: 'I', msg: this.buffer.toString() });
-                        return d;
-                    }
-                };
-                let client = require('dgram').createSocket('udp4');
-                // перехват и перенаправление консоли на сокет
-                E.pipe(_socket, LoopbackB, { end: false });
-                E.pipe(LoopbackB, s, { end: false }); */
+
                 _socket.pipe(LoopbackB);
                 LoopbackB.pipe(this._Socket);
 
@@ -91,7 +90,8 @@ class ClassRouteREPL {
     }
 
     isREPLConnected(_flag) {
-        return _flag;
+        let func = USB.isConnected || E.isUSBConnected || (() => false);
+        return Boolean(this._IsOn || func());
     }
     /**
      * @method
@@ -121,7 +121,7 @@ class ClassRouteREPL {
                 if (eof > -1) {
                     this._Socket.removeListener('data', socketHandler);
                     E.setConsole(LoopbackA);
-                    H.Logger.Log({ service: 'Repl', level: 'I', msg: `Uploaded new file over TCP: ${_fileName} with ${_fileName} bytes ` });
+                    H.Logger.Service.Log({ service: 'Repl', level: 'I', msg: `Uploaded new file over TCP: ${_fileName} with ${_fileName} bytes ` });
                     res();
                 }
                 offset += _data.length;
@@ -152,7 +152,6 @@ class ClassRouteREPL {
      */
     SendFileList() {
         E.setConsole(null);
-        // this._Socket.removeAllListeners('data');
         this._Socket.write(`${SOF}${this.GetFileList().join(', ')}${EOF}`);
         setTimeout(() => {
             this.RouteOff();
@@ -166,13 +165,13 @@ class ClassRouteREPL {
     SendFiles(_args) {
         // указание отправить все доступные файлы
         if (_args == '*')
-            _args = this.GetFileList();
+            _args = this.GetFileList().filter(_fn => _fn != 'plcRouteREPL.min.js');
         // если получен массив, то поочередно выполняется отправка указанных файлов
         if (Array.isArray(_args) && _args.length > 0) {
             // создаём цепочку промисов, чтобы отправить файлы последовательно
             return _args.reduce((promiseChain, fileName) => {
                 return promiseChain.then(() => this.SendFile(fileName));
-            }, Promise.resolve()); // начальная цепочка - resolved Promise
+            }, Promise.resolve()).then(this.RouteOff); // начальная цепочка - resolved Promise
         }
     }
     /**
