@@ -58,6 +58,7 @@ class ClassLedStrip extends ClassActuator {
     constructor(opts) {
         ClassActuator.call(this, opts);
         this._Length = opts.length;
+        if (typeof this._Length !== 'number') throw new Error(`Property length must me a number !`);
         this._Values = new Uint8ClampedArray(opts.length*3);
     }
     /**
@@ -99,7 +100,7 @@ class ClassLedStrip extends ClassActuator {
         if (opts.exclusive) this.SetLedColor({ color: [0, 0, 0] });
         if (opts.color) this.SetLedColor(opts);
 
-        this._ChStatus[_chNum] = 1;
+        this._Channels[_chNum].Status = 1;
         sendData(this._Pins[0], this._Values.map(c => c *_val));
         return true;
     }
@@ -107,7 +108,7 @@ class ClassLedStrip extends ClassActuator {
         let opts = _opts || {};
         if (!opts.saveState) this._Values = this._Values.fill(0);                  // если true, то _Values не будет обнуляться 
         sendData(this._Pins[0], new Uint8ClampedArray(this._Length*3).fill(0)); 
-        this._ChStatus[_chNum] = 0;
+        this._Channels[_chNum].Status = 0;
         return true;
     }
     /**
