@@ -17,6 +17,7 @@ class ProxyWS {
 
         /************************************* SUB EVENTS **********************************/
         Object.on('proxyws-sub-sensorall', _msg => {
+            H.Logger.Service.Log({ service: 'proxyws', level: 'I',  msg: `proxyws-sub-sensorall` });
             this._SubDM = true;
         });
 
@@ -27,8 +28,9 @@ class ProxyWS {
         });
 
         Object.on('all-data-raw-get', _msg => {
-            if (this._SubDM)
+            if (this._SubDM) {
                 this.Send(JSON.stringify(_msg));
+            }
         });
     }
     /**
