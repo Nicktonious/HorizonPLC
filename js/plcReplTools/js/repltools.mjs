@@ -158,7 +158,7 @@ class HorizonTools {
         if (_fileNameList[0] != '*') {
             let nonExistFiles = _fileNameList.filter(_fn => !list.includes(_fn));
             if (nonExistFiles.length) console.error(`На PLC нет файлов ${nonExistFiles} для удаления`);
-            return;
+            // return;
         }
         await this.#DownloadFile_Wrapped(_fileNameList, _path);
         // проверка кол-ва загруженных файлов
@@ -374,6 +374,7 @@ class HorizonTools {
                 fileNameList.push(...newFiles);
                 if (eof > -1) {
                     // все данные получены
+                    if (tail.length) fileNameList.push(tail)
                     socket.end();
                     res(fileNameList);
                 };
@@ -426,7 +427,7 @@ class HorizonTools {
             return false;
         }
         await this.#EraseFile_Wrapped(_fileName);
-        // await sleep(100); CHECK IF ERR
+        await sleep(100); 
         fileList = await this.GetFileList();
         if (fileList.includes(_fileName)) {
             console.warn(`Не удалось удалить ${_fileName}`);
