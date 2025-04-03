@@ -24,7 +24,7 @@ class ClassBistableButton extends ClassSensor {
         this._TimeoutDelay = 0;
         // контроль дребезжания при мониторинге порта
         // задание debounce и timeout либо в согласии с конфигом либо по умолчанию
-        this.Configure(0, { timeout: opts.timeout || 0, debounce: opts.debounce || 15 });   
+        this.Configure(0, { timeout: opts.timeout || 0, debounce: opts.debounce || 50 });   
         // состояние которое изначально примет кнопка после вызова Start(). 
         // 0: вкл, 1: выкл                                                                 
         this._DefaultState = +Boolean(opts.defaultState);  

@@ -19,7 +19,8 @@ class ClassButton extends ClassSensor {
     constructor(opts) {
         ClassSensor.call(this, opts);
         // задание debounce и holdTime либо в согласии с конфигом либо по умолчанию
-        this.Configure(0, { holdTime: opts.holdTime || 1.2, debounce: opts.debounce || 20 });
+        this.Configure(0, { holdTime: opts.holdTime || 1.2, debounce: opts.debounce || 50 });
+        this.Value = 1;
         this._Pins[0].mode('input');
     }
     /**
