@@ -18,8 +18,8 @@ class ClassLightGL5528 extends ClassSensor {
         this._Pins[0].mode('analog');
     }
     Start(_chNum, _period) {
-        this._Channels[0].Status = 1;
-        this._Channels[1].Status = 1;
+        if (this._Channels[0]) this._Channels[0].Status = 1;
+        if (this._Channels[1]) this._Channels[1].Status = 1;
         let period = _period ? E.clip(_period, 20, Infinity) : 50;
         
         this._Interval = setInterval(() => {
@@ -28,16 +28,15 @@ class ClassLightGL5528 extends ClassSensor {
             
             let rensor = (u2/U1) * R1 / (1 - u2/U1); //сопротивление
 
-            this._Channels[1].Value = rensor;
-
-            this._Channels[0].Value = this._K * Math.pow(rensor, this._P);
+            if (this._Channels[1]) this._Channels[1].Value = rensor;
+            if (this._Channels[0]) this._Channels[0].Value = this._K * Math.pow(rensor, this._P);
         }, period);
         return true;
     }
     
-    Stop() {
-        this._Channels[0].Status = 0;
-        this._Channels[1].Status = 0;
+    Stop(_chNum) {
+        if (this._Channels[0]) this._Channels[0].Status = 0;
+        if (this._Channels[1]) this._Channels[1].Status = 0;
         clearInterval(this._Interval);
         this._Interval = null;
         return true;
