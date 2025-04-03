@@ -187,7 +187,7 @@ CheckZone(val)
 
 ### Пример 
 ```js
-let vl_channels = DevicesManager.CreateDevice('00');
+let vl_channels = H.DeviceManager.Service.CreateDevice('00');
 let light = vl_channels[0];              
 let range = vl_channels[1];
 
@@ -241,7 +241,7 @@ light.Alarms.SetZones({
     "quantityChannel": 1,
     "busTypes": [],
     "manufacturingData": {},
-    "modules": ["ModuleDigitalLed.min.js"]
+    "modules": ["plcLED.min.js"]
 },
 "18": {
     "pins": ["A3"],
@@ -254,8 +254,6 @@ light.Alarms.SetZones({
     "typeInSignal": "analog",
     "typeOutSignal": "digital",
     "quantityChannel": 1,
-    "busTypes": [],
-    "manufacturingData": {},
-    "modules": ["ModuleBistableButton.min.js"]
+    "modules": ["plcBistableButton.min.js"]
 }
 ```

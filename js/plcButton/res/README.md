@@ -23,6 +23,24 @@
 
 </div>
 
+## Конструктор
+<div style = "color: #555">
+
+Конструктор принимает данные из конфига. Пример ниже:
+```json
+"btn": {
+    "pins": ["A3"],
+    "debounce": 50,
+    "name": "Button",
+    "article": "",
+    "type": "sensor",
+    "channelNames": ["press"],
+    "quantityChannel": 1,
+    "modules": ["plcButton.min.js"]
+}
+```
+</div>
+
 ### Поля
 <div style = "color: #555">
 
