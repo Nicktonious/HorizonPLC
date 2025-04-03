@@ -65,7 +65,7 @@ class ClassMQTT {
         this.protocol_level = createEscapedHex(_options.protocol_level || C.PROTOCOL_LEVEL);
         this._Proxy = new (require(_options.proxyModule))(this, _options.subs);
 
-        this.on('error', e =>  H.Logger.Service.Log({ service: 'MQTT GW', lvl: 'I', msg: `MQTT client error: ${e}` }));
+        this.on('error', e =>  H.Logger.Service.Log({ service: 'MQTT', level: 'I', msg: `MQTT client error: ${e}` }));
     }
     // Handle a single packet of data
     packetHandler(data) {
