@@ -355,7 +355,7 @@ class ClassDeviceManager {
         try {
             let device = new module(sensorConfig, sensorConfig);
             this.AddDevice(device);
-            return device._Channels;
+            return device._Channels.filter(_ch => Boolean(_ch));
         } catch (e) {
             H.Logger.Service.Log({ service: 'DM', level: 'E', msg: `Error creating ${id}: ${e}` });
         }
