@@ -40,7 +40,10 @@ class ClassBaseActuator {
         this._Article      = _opts.article;
         this._Name         = _opts.name;
         this._Type    = _opts.subChannels ? 'hybrid' : 'actuator';
-        this._ChannelNames = _opts.channelNames;
+        // если  массив вида ["chName0, "chName1"], то он преобразуется к { chName0: 0, chName1: 1 } 
+        this._ChannelNames = Array.isArray(_opts.channelNames) 
+                           ? _opts.channelNames.reduce((acc, item, index) => { acc[item] = index; return acc; }, {}) 
+                           : this._ChannelNames;
 
         this.CheckProps();
 
@@ -63,16 +66,15 @@ class ClassBaseActuator {
      */
     CheckProps() {
         //#region функции которые можно вынести в утилитарный класс
-        const isString = (p) => typeof p === 'string';
         const isStringNonEmpty = (p) => typeof p === 'string' && p.length > 0;
-        const isStringArray = (p) => (Array.isArray(p) && p.every(i => isString(i)));
+        const isChNamesObj = (p) => (typeof p === 'object' && Object.keys(p).every(i => isStringNonEmpty(i) && Object.values(p).every(i => typeof i === 'number')));
         //#endregion
 
         if (!isStringNonEmpty(this._Id)) throw new Error(`Invalid id`);
         if (!isStringNonEmpty(this._Article)) throw new Error(`Invalid article`);
         if (!isStringNonEmpty(this._Name)) throw new Error(`Invalid name`);
         if (!isStringNonEmpty(this._Type)) throw new Error(`Invalid type`);
-        if (!isStringArray(this._ChannelNames)) throw new Error(`Invalid channelNames`);
+        if (!isChNamesObj(this._ChannelNames)) throw new Error(`Invalid channelNames`);
 
         if (this._Bus instanceof I2C && typeof +this._Address != 'number')  // если _Bus это I2C шина, то обязан быть передан _Address 
             throw new Error('Address of i2c device is not provided');
@@ -102,14 +104,15 @@ class ClassActuator extends ClassBaseActuator {
     constructor(_opts) {
         ClassBaseActuator.call(this, _opts);
 
-        this._Channels = Array(this._ChannelNames.length);
+        this._Channels = Array(Object.keys(this._ChannelNames).length);
 
-        for (let i = 0; i < this._ChannelNames.length; i++) {
-            let ch_name = _opts.channelNames[i];
+        Object.keys(this._ChannelNames).forEach(_chName => { 
+            let chNum = this._ChannelNames[_chName];
             // объект конфигурации канала
-            let ch_config = typeof _opts.channelsConfig == 'object' ? _opts.channelsConfig[ch_name] : {};
-            this._Channels[i] = new ClassChannelActuator(this, i, ch_config);
-        }
+            let ch_config = typeof _opts.channelsConfig == 'object' ? _opts.channelsConfig[_chName] : {};
+
+            this._Channels[chNum] = new ClassChannelActuator(this, +chNum, ch_config);  // инициализируем и сохраняем объекты каналов
+        });
     }
 
     get ID() { return this._Id; }
@@ -250,7 +253,7 @@ class ClassChannelActuator {
      * Возвращает имя канала
      */
     get Name() {
-        return this._ThisActuator._ChannelNames[this._ChNum];
+        return Object.keys(this.Device._ChannelNames).find(_chName => this.Device._ChannelNames[_chName] == this._ChNum); 
     }
     /**
      * @getter
