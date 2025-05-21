@@ -57,4 +57,7 @@
      ```bash
      node js/index.mjs -host 192.168.1.106 -erase t1.txt
      ```
-
+5. **Подключение по COM-порту**
+    ```bash
+     node js/index.mjs -port COM10 -baud 115200
+     ```
