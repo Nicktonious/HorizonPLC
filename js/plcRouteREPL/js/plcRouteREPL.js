@@ -3,92 +3,186 @@ const EOF = '>> >';
 const SON = '<<$<';
 const EON = '>>$>';
 
-function pipe(_fn, _dest, _opts) {
-    let offset = 0;
-    let l = require("Storage").read(_fn).length;
-    let interval = setInterval(() => {
-        // let str = require("Storage").read(_fn, offset, _opts.chunkSize);
-        if (!_dest.conn || offset >= l /*!str.length*/) {
-            clearInterval(interval);
-            if (_opts.complete) _opts.complete();
-            if (_opts.end && _dest) _dest.end();
-            return;
-        }
-        _dest.write(require("Storage").read(_fn, offset, _opts.chunkSize));
-        offset += _opts.chunkSize;   
-        // delete str;
-    }, 50);
-}
+const EVENT_CH_CONSOLE = 'repl-set-cons';
+const COM_TIMEOUT =  5000;//1200000; // 20min
+const isSocket = _o => typeof _o == 'object' && _o.hasOwnProperty('conn') && typeof _o.end == 'function';
+/**
+ * @typedef TypeBusOpts
+ * @property {string} index
+ * @property {number} baudrate
+ */
+/**
+ * @typedef TypeOpts
+ * @property {number} port
+ * @property {TypeBusOpts} bus 
+ */
 /**
  * @class
  * Класс предоставляет возможность удаленного подключения к консоли по TCP-соединению.
  */
 class ClassRouteREPL {
+    /**
+     * @constructor
+     * @param {TypeOpts} _opts 
+     */
     constructor(_opts) {
         _opts = _opts || {};
-        this._DefConsole = eval(E.getConsole()); // eval позволяет хранить инициализированный объект UART шины. Это необходимо для работы с его функционалом из класса Route   
+        this._DfltConsole = eval(E.getConsole()); // eval позволяет хранить инициализированный объект UART шины. Это необходимо для работы с его функционалом из класса Route   
         this._IsOn = false;
         this._Name = 'RouteREPL';
-        this._ReconnectTry = 0;
         this._Port = _opts.port || 23;
         this._Sending = false;
-        // авто запуск роутинга после полного старта PLC
-        Object.on('complete', this.RouteOn.bind(this));
+        // авто запуск роутинга после полного старта фреймворка
+        Object.on('complete', () => {
+            // если была передана UART-шина, нужно сохранить ссылку на нее и выполнить setup()
+            if (_opts.bus) try {
+                this._Bus = H.UARTbus.Service._UARTbus[_opts.bus.index].IDbus;
+                this._Bus.setup(_opts.bus.baudrate);
+            } catch (e) {
+                H.Logger.Service.Log({ service: this._Name, level: 'I', msg: `Failed to setup UART bus ${_opts.bus.index}: ${e}` });
+            }
+            this.RouteOn();
+        });
     }
     /** 
      * @getter 
-     * Возвращает тип текущего подключения к консоли: NONE, USB или REMOTE
+     * Возвращает тип текущего подключения к консоли: USB | UART | TCP | 'null' | ''
      */
     get ConsoleType() {
-        return this._IsOn ? 'Telnet' : E.isUSBConnected() ? 'USB' : 'NONE';
+        let console = E.getConsole();
+
+        if (console == 'LoopbackA' && isSocket(this._Source)) return 'TCP';
+        if (console == 'USB' && E.isUSBConnected()) return console; //USB
+        if (!console) return 'null';
+        if (console.startsWith('Serial')) return 'UART';
+        return '';      //  unexpected behavior
     }
     /**
      * @method
-     * Запуск TCP-сервера
+     * Запуск TCP-сервера, мониторинга UART шины и USB
      * Перехват консоли при подключении клиента. Объединение потоков с консоли на сокет и обратно.
      */
     RouteOn() {
         try {
-            this._Server = require('net').createServer(_socket => {
-                // завершение предыдущего подключения
-                if (this._Socket) this._Socket.end();
-                this._Socket = _socket;
-                _socket.on('close', () => {
-                    this._Socket = null;
-                    setTimeout(() => {
-                        // возврат стандартной консоли если не появился новый сокет
-                        if (!this._Socket) this.RouteOff();
-                    }, 50);
-                });
-
-                _socket.pipe(LoopbackB);
-                LoopbackB.pipe(this._Socket);
-
-                E.setConsole(LoopbackA, { force: false });   //Перехватываем консоль
-            });
-            this._Server.listen(this._Port);
+            if (H.Network)  
+                this.ListenTCP(); 
+            if (this._Bus instanceof Serial && this._Bus.isConnected()) 
+                this.ListenUART();
+            if (this._DfltConsole instanceof Serial) 
+                this.ListenUSB();
         } catch (e) {
-            H.Logger.Service.Log({ service: 'RouteREPL', level: 'I', msg: e });
-            if (++this._ReconnectTry < 3) {
-                this.RouteOn();
-            } else {
-                this.RouteOff();
-                this._ReconnectTry = 0;
-            }
+            H.Logger.Service.Log({ service: this._Name, level: 'I', msg: e });
+            this.RouteOff();
         }
-
+        this.on(EVENT_CH_CONSOLE, this.SetConsole.bind(this));
         this._IsOn = true;
     }
     /**
-     * @method
-     * Через этот метод RouteREPL получает команду к непосредственно выполнению.
-     * @param {String} _stdin - команда, которая передается в REPL
-     * @returns 
+     * @method 
+     * Возвращает работу консоли в состояние по умолчанию (как при запуске Espruino IDE). 
+     * Рассчитан на применение сугубо в целях отладки.
      */
-    Receive(_stdin) {
-        LoopbackB.write(_stdin);
+    RouteOff() {
+        E.setConsole(this._DfltConsole, { force: true });
+        if (isSocket(this._Source)) this._Source.end();
+        this.removeAllListeners(EVENT_CH_CONSOLE);
+        this._IsOn = false;
+    }
+    /**
+     * @method
+     * Запуск TCP-сервера. Перехват консоли при подключении клиента.
+     */
+    ListenTCP() {
+        try {
+            this._Server = require('net').createServer(_socket => {
+                // завершение предыдущего подключения
+                if (isSocket(this._Source)) this._Source.end();
+                this._Source = _socket;
+                _socket.on('close', () => {
+                    this._Source = null;
+                });
+                this.emit(EVENT_CH_CONSOLE, _socket);
+            });
+            this._Server.listen(this._Port);
+        } catch (e) {
+            H.Logger.Service.Log({ service: this._Name, level: 'E', msg: `Error on TCP server: ${e}` });       
+        }
     }
 
+    /**
+     * @method
+     * @description Запускает мониторинг UART-шины. 
+     * При поступлении сообщения \r\n устанавливает консоль на шину. Если 
+     */
+    ListenUART() {
+        this._Bus.on('data', _stdin => {
+            // \r приводит к перехвату консоли
+            if (_stdin.indexOf('\r') > -1 && this.ConsoleType != 'UART') {
+                this.emit(EVENT_CH_CONSOLE, this._Bus);
+            }
+        });
+    }
+
+    /**
+     * @method
+     * @description Запускает мониторинг USB. 
+     * Периодический просмотр статуса подключения USB, в зависимости от которого обновляется setConsole()
+     */
+    ListenUSB() {
+        // обработчик, слушающий событие 'data' когда USB перестает быть активным интерфейсом
+        // \r приводит к перехвату консоли
+        const usbHandler = (_stdin => {
+            if (this.ConsoleType != 'USB' && _stdin.indexOf('\r') > -1 && !this._Sending) {
+                this._DfltConsole.removeListener('data', usbHandler);
+                this.emit(EVENT_CH_CONSOLE, this._DfltConsole);
+            }
+        }).bind(this);
+
+        //  по событию EVENT_CH_CONSOLE либо назначить обнаботчик на USB либо удалить его
+        this.on(EVENT_CH_CONSOLE, _source => {
+            if (_source == this._DfltConsole) 
+                this._DfltConsole.removeListener('data', usbHandler);
+            else 
+                this._DfltConsole.on('data', usbHandler);
+        });
+
+        // проверка что USB не был физически отключен (это нельзя перехватить как событие)  
+        const watchActivity = ms => setTimeout(() => {
+            if (this.ConsoleType == 'USB' && !E.isUSBConnected()) 
+                this.emit(EVENT_CH_CONSOLE, null);
+            
+            this._USBtimeout = watchActivity(ms)
+
+        }, ms);
+
+        if (this._USBtimeout) clearTimeout(this._USBtimeout);
+        this._USBtimeout = watchActivity(COM_TIMEOUT);
+    }
+    /**
+     * @method
+     * @description 
+     * @param {} _source 
+     */
+    SetConsole(_source, _cb) {
+        if (isSocket(this._Source)) this._Source.end();
+        // сокеты связываются с консолью через Loopback'и
+        if (isSocket(_source)) {
+            _source.pipe(LoopbackB);
+            LoopbackB.pipe(_source);
+            E.setConsole(LoopbackA, { force: true });
+        }
+        else E.setConsole(_source, { force: true });
+        this._Source = _source;
+        try {
+            H.Logger.Service._HaveConsole = this.ConsoleType != 'null' ? true : false;
+        } catch (e) {}
+        if (typeof _cb =='function') _cb();
+    }
+    /**
+     * @deprecated
+     * @param {*} _flag 
+     * @returns 
+     */
     isREPLConnected(_flag) {
         let func = USB.isConnected || E.isUSBConnected || (() => false);
         return Boolean(this._IsOn || func());
@@ -105,7 +199,7 @@ class ClassRouteREPL {
             // блокировка консоли чтобы данные с сокета не могли попасть в файл
             E.setConsole(null);
             let offset = 0;
-            this._Socket.removeAllListeners('data');
+            this._Source.removeAllListeners('data');
             /**
              * @function
              * @description Обработчик сокета для чтения данных 
@@ -119,25 +213,15 @@ class ClassRouteREPL {
                 require('Storage').write(_fileName, _data, offset, _fileSize);
                 // чтение файла завершено
                 if (eof > -1) {
-                    this._Socket.removeListener('data', socketHandler);
+                    this._Source.removeListener('data', socketHandler);
                     E.setConsole(LoopbackA);
-                    H.Logger.Service.Log({ service: 'Repl', level: 'I', msg: `Uploaded new file over TCP: ${_fileName} with ${_fileName} bytes ` });
+                    H.Logger.Service.Log({ service: this._Name, level: 'I', msg: `Uploaded new file over TCP: ${_fileName} with ${_fileName} bytes ` });
                     res();
                 }
                 offset += _data.length;
             }
-            this._Socket.prependListener('data', socketHandler);
+            this._Source.prependListener('data', socketHandler);
         });
-    }
-    /**
-     * @method 
-     * Возвращает работу консоли в состояние по умолчанию (как при запуске Espruino IDE). 
-     * Рассчитан на применение сугубо в целях отладки.
-     */
-    RouteOff() {
-        E.setConsole(this._DefConsole, { force: true });
-        if (this._Socket) this._Socket.end();
-        this._IsOn = false;
     }
     /**
      * @method
@@ -152,7 +236,7 @@ class ClassRouteREPL {
      */
     SendFileList() {
         E.setConsole(null);
-        this._Socket.write(`${SOF}${this.GetFileList().join(', ')}${EOF}`);
+        this._Source.write(`${SOF}${this.GetFileList().join(', ')}${EOF}`);
         setTimeout(() => {
             this.RouteOff();
         }, 250);
@@ -182,10 +266,10 @@ class ClassRouteREPL {
      */
     SendFile(_fileName) {
         return new Promise((res, rej) => {
-            if (!this._Socket) rej();
+            if (!this._Source) rej();
             // блокировка консоли
             E.setConsole(null);
-            this._Socket.removeAllListeners('data');
+            this._Source.removeAllListeners('data');
             let file;
             try {
                 file = require("Storage").read(_fileName);
@@ -197,13 +281,13 @@ class ClassRouteREPL {
             }
             this._Sending = true;
             setTimeout(() => {
-                this._Socket.write(`${SON}${JSON.stringify({ fn: _fileName })}${EON}`);
-                this._Socket.write(SOF);
-                E.pipe(file, this._Socket, {
+                this._Source.write(`${SON}${JSON.stringify({ fn: _fileName })}${EON}`);
+                this._Source.write(SOF);
+                E.pipe(file, this._Source, {
                     end: false,
                     chunkSize: 64,
                     complete: () => {
-                        this._Socket.write(EOF);
+                        this._Source.write(EOF);
                         this._Sending = false;
                         // E.setConsole(LoopbackA, { force: false });
                         // H.Logger.Service.Log({ service: 'Repl', level: 'I', msg: `Sent file over TCP: ${_fileName} `});
