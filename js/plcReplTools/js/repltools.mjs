@@ -1,4 +1,5 @@
 import net, { Socket } from 'net';
+import { SerialPort } from 'serialport';
 import fs from 'fs';
 import path from 'path';
 import { findNonEmptyFiles } from './utils.mjs';
@@ -139,7 +140,13 @@ class HorizonTools {
     }
 
     #CreateConnection() {
-        return net.createConnection(this._connectOpts.port, this._connectOpts.host);
+        // let l = await SerialPort.list();
+        const { port } = this._connectOpts;
+        if (this._connectOpts.port && this._connectOpts.host)
+            return net.createConnection(port, this._connectOpts.host);
+        if (typeof port == 'string' && typeof this._connectOpts.baud == 'number') {
+            return new SerialPort({ path: port, baudRate: this._connectOpts.baud });
+        }
     }
     // Функция для проверки загруженных файлов
     async GetNotDownloadedFiles(_dir, _totalList) {
