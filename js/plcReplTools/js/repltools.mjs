@@ -5,6 +5,7 @@ import path from 'path';
 import { findNonEmptyFiles } from './utils.mjs';
 import LoggingStream from './loggingStream.mjs';
 import ClassLogger from './plcLogger.mjs';
+import ClassSerialManager from './comPortManager.mjs';
 
 const GET_LIST_TIMEOUT = 2500;
 const UPLOAD_PERIOD = 50;
@@ -26,6 +27,7 @@ class HorizonTools {
     constructor(_connectOpts) {
         // { host: '192.168.1.71', port: 23 }
         this._connectOpts = _connectOpts;
+        this._comPorts = new ClassSerialManager();
         this._logger = null;
     }
     /**
@@ -42,7 +44,7 @@ class HorizonTools {
      * @description Команда, которая передается в REPL PLC для инициализации загрузки файла
      * @returns {String}
      */
-    Upload_GetStartCommand(_fileName, _fileSize) { return `\r\nH.Repl.Service.UploadFile('${_fileName}', ${_fileSize})\r\n`; }
+    Upload_GetStartCommand(_fileName, _fileSize) { return `H.Repl.Service.UploadFile('${_fileName}', ${_fileSize})\r\n`; }
     /**
      * @method
      * @description Команда, которая передается в REPL PLC для инициализации получения списка файлов
@@ -103,11 +105,18 @@ class HorizonTools {
         }, MAX_TIME_NO_RECEIVE);
 
         let text = (this.tail??'')+_chunk.toString();
+        console.log(text);
         let { sof, eof, data, tail } = this.#DownloadFile_ProcessText(text);
         this.tail = tail;
         if (!this.writeStream || this.writeStream.ending) {
             let fn = this.#DownloadFile_ParseFileName(text);
             if (!fn) return;
+            let fullPath = path.join(_savePath, fn);
+            let dir = path.dirname(fullPath);
+
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
             this.writeStream = fs.createWriteStream(`${_savePath}/${fn}`);
             this.writeStream.name = fn;
 
@@ -139,13 +148,16 @@ class HorizonTools {
         });
     }
 
-    #CreateConnection() {
+    async #CreateConnection() {
         // let l = await SerialPort.list();
         const { port } = this._connectOpts;
-        if (this._connectOpts.port && this._connectOpts.host)
+        const isTCPport = this._connectOpts.port && this._connectOpts.host;
+        if (isTCPport)
             return net.createConnection(port, this._connectOpts.host);
-        if (typeof port == 'string' && typeof this._connectOpts.baud == 'number') {
-            return new SerialPort({ path: port, baudRate: this._connectOpts.baud });
+        
+        const isSerial = typeof port == 'string' && typeof this._connectOpts.baud == 'number';
+        if (isSerial) {
+            return await this._comPorts.getConnection(port, this._connectOpts.baud);
         }
     }
     // Функция для проверки загруженных файлов
@@ -210,10 +222,13 @@ class HorizonTools {
     }
 
     async #DownloadFile_Wrapped(_fileNameList, _savePath) {
-        return new Promise((res, rej) => {
+        return new Promise(async (res, rej) => {
             this.isWriting = false;
-            this.socket = this.#CreateConnection();
-
+            this.socket = await this.#CreateConnection();
+            if (this.socket instanceof SerialPort) {
+                this.socket.write('\r');
+                await sleep(50);
+            }
             const startCom = this.DownloadFile_GetStartCommand(_fileNameList);
             this.socket.write(startCom);
             // Обработка данных от клиента
@@ -258,7 +273,13 @@ class HorizonTools {
      * @param {string} [_uploadName=_fileName] - имя с которым загрузить файл (опционально)
      */
     async UploadFile(_filePath, _uploadName) {
-        let fstat = fs.statSync(_filePath);
+        let fstat;
+        try {
+            fstat = fs.statSync(_filePath);
+        } catch (err) {
+            console.error("Ошибка при доступе к файлу:", err.message);
+            // можно вернуть или выбросить дальше
+        }
         // если папка, выкачиваются все файлы
         if (fstat.isDirectory()) {
             // список путей к файлам
@@ -266,7 +287,7 @@ class HorizonTools {
             let errCount = 0;
             for await (let filePath of fileList) {
                 try {
-                    await this.#UploadFile_Wrapped(filePath, path.basename(filePath));
+                    await this.#UploadFile_Wrapped(_filePath+filePath, path.basename(filePath));
                     await sleep(100);
                 } catch (e) {
                     // TODO: 
@@ -285,17 +306,23 @@ class HorizonTools {
     }
 
     async #UploadFile_Wrapped(_filePath, _uploadName) {
-        return new Promise((res, rej) => {
+        return new Promise(async (res, rej) => {
             let uploadName = _uploadName ?? path.basename(_filePath);
-            let socket = this.#CreateConnection();
+            let socket = await this.#CreateConnection();
             let file = fs.readFileSync(_filePath, 'utf-8').toString();
             let fileSize = file.length;
             // при подключении 
             socket.once('connect', async () => {
+                if (socket instanceof SerialPort) {
+                    socket.write('\r');
+                    await sleep(50);
+                }
                 socket.write(this.Upload_GetStartCommand(uploadName, fileSize));
+                await sleep(100);
                 await this.#SendFileToSocket(socket, file);
                 res();
             });
+            if (socket instanceof SerialPort && socket.isOpen) socket.emit('connect'); 
             socket.once('error', rej);
             socket.once('close', () => {
                 rej();
@@ -324,7 +351,7 @@ class HorizonTools {
                 if (offset >= file.length) {
                     clearInterval(interval);
                     console.log('\r\nПередача файла завершена');
-                    _socket.end();
+                    // _socket.end();
                     return res();
                 }
                 let data = file.slice(offset, offset+CHUNKSIZE_UPL);
@@ -342,6 +369,7 @@ class HorizonTools {
      */
     async GetFileList(_fileName, print) {
         try {
+            await sleep(200);
             let list = await this.#GetFileList_Wrapped();
             if (print) console.log(list.join('\n'));
             if (_fileName) fs.writeFileSync(_fileName, list.join('\n'), 'utf-8');
@@ -354,11 +382,15 @@ class HorizonTools {
     }
 
     #GetFileList_Wrapped() {
-        return new Promise((res, rej) => {
+        return new Promise(async (res, rej) => {
             let isWriting = false;
             let fileNameList = [];
             let tail = '';
-            let socket = this.#CreateConnection();
+            let socket = await this.#CreateConnection();
+            if (socket instanceof SerialPort) {
+                socket.write('\r');
+                await sleep(50);
+            }
             socket.write(this.GetFileList_GetStartCommand());
             // let data = '';
             // while (!(data=socket.read()))
@@ -382,7 +414,7 @@ class HorizonTools {
                 if (eof > -1) {
                     // все данные получены
                     if (tail.length) fileNameList.push(tail)
-                    socket.end();
+                    // socket.end();
                     res(fileNameList);
                 };
             });
@@ -396,8 +428,12 @@ class HorizonTools {
      * @description Выполняет подключение к консоли
      */
     async RouteRepl(_logOpts) {
-        return new Promise((res, rej) => {
-            let socket = this.#CreateConnection();
+        return new Promise(async (res, rej) => {
+            let socket = await this.#CreateConnection();
+            if (socket instanceof SerialPort) {
+                socket.write('\r');
+                await sleep(50);
+            }
             if (_logOpts) {
                 // инициализация логгера
                 _logOpts.server = _logOpts.host;
@@ -445,14 +481,19 @@ class HorizonTools {
     }
 
     async #EraseFile_Wrapped(_fileName) {
-        return new Promise((res, rej) => {
+        return new Promise(async (res, rej) => {
             try {
-                let socket = this.#CreateConnection();
+                let socket = await this.#CreateConnection();
+                if (socket instanceof SerialPort) {
+                    socket.write('\r');
+                    await sleep(50);
+                }
                 socket.once('connect', async () => {
                     socket.write(`\r\nrequire('Storage').erase('${_fileName}')\r\n`);
                     socket.end(res);
                 });
                 socket.once('connectionAttemptFailed', rej);
+                if (socket instanceof SerialPort) socket.emit('connect');
             } catch (e) {
                 rej(e);
             }
