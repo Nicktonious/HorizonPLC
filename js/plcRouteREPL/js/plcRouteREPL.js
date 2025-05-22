@@ -4,7 +4,7 @@ const SON = '<<$<';
 const EON = '>>$>';
 
 const EVENT_CH_CONSOLE = 'repl-set-cons';
-const COM_TIMEOUT =  5000;//1200000; // 20min
+const COM_TIMEOUT =  15000;//1200000; // 20min
 const isSocket = _o => typeof _o == 'object' && _o.hasOwnProperty('conn') && typeof _o.end == 'function';
 /**
  * @typedef TypeBusOpts
@@ -197,31 +197,53 @@ class ClassRouteREPL {
         if (this._Sending) return;
         return new Promise((res, rej) => {
             // блокировка консоли чтобы данные с сокета не могли попасть в файл
-            E.setConsole(null);
+            E.setConsole(null, { force: true });
             let offset = 0;
             this._Source.removeAllListeners('data');
+            let tail = '';
+            let timeout = null;
+            let resetTimeout = () => {
+                if (timeout) clearTimeout(timeout)
+                timeout = setTimeout(rej, 2000);
+            }
             /**
              * @function
              * @description Обработчик сокета для чтения данных 
              * @param {string} _data 
              */
             let socketHandler = _data => {
-                let sof = _data.indexOf(SOF);    // начало файла
-                let eof = _data.indexOf(EOF);    // конец файла
-                _data = _data.slice(sof != -1 ? sof + SOF.length : 0, eof == -1 ? _data.length : eof);
+                resetTimeout();
+                if (tail.length) _data = tail + _data;
+                let eof = _data.indexOf(EOF);
+                let sof = _data.indexOf(SOF);
+                if (sof > eof && eof != -1) sof = -1;
+                // текст обрезается либо по EOF последовательности (1),
+                // либо за EOF.length-1=3 символа до конца (2)
+                let dataCut = _data.slice(
+                    sof == -1 ? 0 : sof+SOF.length,
+                    _data.endsWith(SOF) ? _data.length : eof == -1 ? _data.length-EOF.length+1 : eof
+                );
+                // если (1) то tail - текст после EOF
+                // если (2) то tail - последние 3 символа  
+                tail = _data.endsWith(SOF) ? '' : eof == -1 
+                    ? _data.slice(_data.length-EOF.length+1) 
+                    : _data.slice(eof+EOF.length);
 
-                require('Storage').write(_fileName, _data, offset, _fileSize);
+                if (dataCut.length && (sof > -1 || offset > 0)) {
+                    require('Storage').write(_fileName, dataCut, offset, _fileSize);
+                    offset += dataCut.length;
+                }
                 // чтение файла завершено
                 if (eof > -1) {
                     this._Source.removeListener('data', socketHandler);
-                    E.setConsole(LoopbackA);
+                    E.setConsole(LoopbackA, { force: true });
                     H.Logger.Service.Log({ service: this._Name, level: 'I', msg: `Uploaded new file over TCP: ${_fileName} with ${_fileName} bytes ` });
+                    if (timeout) clearTimeout(timeout);
                     res();
                 }
-                offset += _data.length;
             }
             this._Source.prependListener('data', socketHandler);
-        });
+        }).then(this.RouteOn.bind(this));
     }
     /**
      * @method
@@ -235,10 +257,10 @@ class ClassRouteREPL {
      * @description Отправляет на сокет список файлов
      */
     SendFileList() {
-        E.setConsole(null);
+        E.setConsole(null, { force: true });
         this._Source.write(`${SOF}${this.GetFileList().join(', ')}${EOF}`);
         setTimeout(() => {
-            this.RouteOff();
+            this.RouteOn();
         }, 250);
     }
     /**
@@ -255,7 +277,7 @@ class ClassRouteREPL {
             // создаём цепочку промисов, чтобы отправить файлы последовательно
             return _args.reduce((promiseChain, fileName) => {
                 return promiseChain.then(() => this.SendFile(fileName));
-            }, Promise.resolve()).then(this.RouteOff); // начальная цепочка - resolved Promise
+            }, Promise.resolve()).then(this.RouteOn.bind(this)); // начальная цепочка - resolved Promise
         }
     }
     /**
@@ -268,7 +290,7 @@ class ClassRouteREPL {
         return new Promise((res, rej) => {
             if (!this._Source) rej();
             // блокировка консоли
-            E.setConsole(null);
+            E.setConsole(null, { force: true });
             this._Source.removeAllListeners('data');
             let file;
             try {
