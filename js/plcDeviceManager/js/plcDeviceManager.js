@@ -1,7 +1,7 @@
 const ClassSensor   = require('plcSensor.min.js');
 const ClassActuator = require('plcActuator.min.js');
 
-const POLLING_FREQ = 5;
+let POLLING_FREQ = 1;
 /**
  * @typedef ClassMsg
  * @property {[string|number]} arg
@@ -14,12 +14,13 @@ const POLLING_FREQ = 5;
  * инициализации, адресации команд, сбора данных 
  */
 class ClassDeviceManager {
-    constructor() {
+    constructor(_opts) {
         if (this.Instance) {
             return this.Instance;
         } else {
             ClassDeviceManager.prototype.Instance = this;
         }
+        if (_opts && typeof _opts.pollFreq == 'number') POLLING_FREQ = _opts.pollFreq;
 
         this._Devices = [];
         // this._RegisteredBuses = {};
@@ -209,6 +210,7 @@ class ClassDeviceManager {
             // console.log('DEBUG>>iteration is done');
 
         }, 1 / freq * 1000);
+        H.Logger.Service.Log({ msg: `Polling started with frequency ${freq}`, service: 'DM', level: 'I' });
         return true;
 
     }
