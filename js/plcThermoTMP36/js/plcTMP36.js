@@ -1,3 +1,4 @@
+const ClassSensor = require('plcSensor.min.js');
 /**
  * @class
  * Класс аналогового датчика TMP36
