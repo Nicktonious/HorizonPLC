@@ -8,9 +8,9 @@ class ClassSensorPLC extends ClassSensor {
     constructor(_opts) {
         ClassSensor.call(this, _opts);
         // вкл. Bypass в каналах, возвращающих string
-        this._Channels[2]._Bypass = true;
-        this._Channels[6]._Bypass = true;
-        this._Channels[7]._Bypass = true;
+        if (this._Channels[2]) this._Channels[2]._Bypass = true;
+        if (this._Channels[6]) this._Channels[6]._Bypass = true;
+        if (this._Channels[7]) this._Channels[7]._Bypass = true;
         // Запуск всех каналов с частотой заданной в конфиге либо 1 р/сек 
         this._Channels.forEach(_ch => _ch.Start(1000/_opts.pollFreq || 1));
     }
@@ -21,14 +21,14 @@ class ClassSensorPLC extends ClassSensor {
 
         if (!this._Interval) {
             this._Interval = setInterval(() => {
-                this._Channels[0].Value = E.getTemperature();
-                this._Channels[1].Value = getTime();
-                this._Channels[2].Value = Process.GetSystemTime();
-                this._Channels[3].Value = process.memory().total;
-                this._Channels[4].Value = process.memory().free;
-                this._Channels[5].Value = process.memory().flash_length;
-                this._Channels[6].Value = H.Network ? H.Network.Service ? H.Network.Service._Ip : undefined : undefined;
-                this._Channels[7].Value = getSerial();
+                if (this._Channels[0]) this._Channels[0].Value = E.getTemperature();
+                if (this._Channels[1]) this._Channels[1].Value = getTime();
+                if (this._Channels[2]) this._Channels[2].Value = Process.GetSystemTime();
+                if (this._Channels[3]) this._Channels[3].Value = process.memory().total;
+                if (this._Channels[4]) this._Channels[4].Value = process.memory().free;
+                if (this._Channels[5]) this._Channels[5].Value = process.memory().flash_length;
+                if (this._Channels[6]) this._Channels[6].Value = H.Network ? H.Network.Service ? H.Network.Service._Ip : undefined : undefined;
+                if (this._Channels[7]) this._Channels[7].Value = getSerial();
             }, _period);
         }
         return true;
