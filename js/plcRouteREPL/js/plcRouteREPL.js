@@ -118,7 +118,9 @@ class ClassRouteREPL {
         this._Bus.on('data', _stdin => {
             // \r приводит к перехвату консоли
             if (_stdin.indexOf('\r') > -1 && this.ConsoleType != 'UART') {
-                this.emit(EVENT_CH_CONSOLE, this._Bus);
+                this.emit(EVENT_CH_CONSOLE, this._Bus, (() => {
+                    if (this._DfltConsole) this._DfltConsole.write(`REPL connected to ${this._Bus} UART console\n`);
+                }).bind(this));
             }
         });
     }
