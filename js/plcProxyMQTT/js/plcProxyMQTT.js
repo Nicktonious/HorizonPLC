@@ -22,7 +22,7 @@ class ClassProxyMQTT {
         this._DataSkipInterval = null;
         this._ReconnectInterval = null;
         // EVENTS
-        Object.on('complete', () => _mqtt.connect());
+        Object.on('connect', () => setTimeout(() => {_mqtt.connect();}, 2000));
         Object.on('proxymqtt-sub-sensorall', this.HandlerEvents_proxymqtt_sub_sensorall.bind(this));
         Object.on('all-data-raw-get', this.HandlerEvents_all_data_raw.bind(this)); 
         this._MQTT.on('connected',    this.OnConnected.bind(this));
@@ -92,27 +92,23 @@ class ClassProxyMQTT {
      */
     OnDisconnected() {
         H.Logger.Service.Log({ service: 'MQTT', level: 'I', msg: `MQTT disconnected!` });
+        
         if (this._ReconnectInterval) return;
         let c = 0;
         this._ReconnectInterval = setInterval(() => {
             if (this._MQTT.connected) {
                 clearInterval(this._ReconnectInterval);
                 this._ReconnectInterval = null;
-                return;
-            }
-            if (c++ == 3) {
+            } else if (c == 3) {
                 clearInterval(this._ReconnectInterval);
                 this._ReconnectInterval = null;
                 H.Logger.Service.Log({ service: 'MQTT', level: 'I', msg: `MQTT failed to reconnect after ${c} retries. Reset` });
-                /*H.Network.Service.Reset(() => {
-                    this._MQTT.connect();
-                    // с = 0;
-                });*/
                 return;
             } else {
                 H.Logger.Service.Log({ service: 'MQTT', level: 'I', msg: `MQTT trying to reconnect..` });
                 this._MQTT.connect();
             }
+            c++;
         }, 7000);
     }
 
