@@ -66,6 +66,11 @@ class ClassMQTT {
         this._Proxy = new (require(_options.proxyModule))(this, _options.subs);
 
         this.on('error', e =>  H.Logger.Service.Log({ service: 'MQTT', level: 'I', msg: `MQTT client error: ${e}` }));
+        Object.on('SOpen', ind => {
+            if (this.client && this.client.sckt-1 == ind) {
+                this.onConnect(this.client);
+            }
+        });
     }
     // Handle a single packet of data
     packetHandler(data) {
@@ -149,21 +154,22 @@ class ClassMQTT {
                 this.emit('connect');
             } else {
                 var mqttError = "Connection refused, ";
-                this.connected = false;
                 if (returnCode > 0 && returnCode < 6) {
+                    this.connected = false;
                     mqttError += RETURN_CODES[returnCode];
+                    this.emit('error', mqttError);
                 } else {
                     mqttError += "unknown return code: " + returnCode + ".";
                 }
-                this.emit('error', mqttError);
+                H.Logger.Service.Log({ service: 'MQTT', level: 'I', msg: `Unsupported packet ${stringToHexArray(data)}` });
             }
         } else {
-            this.emit('error', "MQTT unsupported packet type: " + type);
+            // this.emit('error', "MQTT unsupported packet type: " + type);
+            H.Logger.Service.Log({ service: 'MQTT', level: 'I', msg: `Unsupported packet ${stringToHexArray(data)}` });
             //console.log("[MQTT]" + data.split("").map(function (c) { return c.charCodeAt(0); }));
         }
     }
     onConnect(client) {
-        this.client = client;
         // write connection message
         client.write(this.mqttConnect(this.client_id));
         // handle connection timeout if too slow
@@ -181,17 +187,15 @@ class ClassMQTT {
     };
     /* Public interface ****************************/
     /** Establish connection and set up keep_alive ping */
-    connect(client) {
-        if (client) {
-            this.onConnect();
-        } else {
-            try {
-                client = require("net").connect({ host: this.host, port: this.port }, this.onConnect.bind(this));
-            } catch (e) {
-                this.client = false;
-                this.emit('error', e.message);
-                this.emit('disconnected');
-            }
+    connect() {
+        try {
+            client = H.Network.Service.CreateSocket(this.host, this.port, 'tcp', this.protocol_name, _socket => {
+                this.client = _socket;
+            });
+        } catch (e) {
+            this.client = false;
+            this.emit('error', e.message);
+            this.emit('disconnected');
         }
     }
     /** Called internally when the connection closes  */
@@ -224,7 +228,7 @@ class ClassMQTT {
         }
       */
     publish(topic, message, opts) {
-        if (!this.client) return;
+        if (!this.client || !this.client.conn) return;
         opts = opts || {};
         try {
             this.client.write(mqttPublish(topic, message.toString(), opts.qos || C.DEF_QOS, (opts.retain ? 1 : 0) | (opts.dup ? 8 : 0)));
@@ -274,6 +278,7 @@ class ClassMQTT {
         try {
             this.client.write(fromCharCode(TYPE.PINGREQ << 4, 0));
         } catch (e) {
+            this.emit('error', e);
             this._scktClosed();
         }
     }
@@ -417,7 +422,13 @@ function mqttUnsubscribe(topic) {
 function createEscapedHex(number) {
     return fromCharCode(parseInt(number.toString(16), 16));
 }
-
+function stringToHexArray(str) {
+  var hexArray = [];
+  for (var i = 0; i < str.length; i++) {
+    hexArray.push(str.charCodeAt(i).toString(16).padStart(2, '0'));
+  }
+  return hexArray;
+}
 
 
 /* Exports *************************************/
