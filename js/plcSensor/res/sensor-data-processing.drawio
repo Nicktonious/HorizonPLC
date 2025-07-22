@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2024-07-22T06:08:39.543Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" etag="R6rawMqjMUQAyum9ksDG" version="24.7.1" type="device">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36" version="28.0.6">
   <diagram name="Страница — 1" id="ugKFan7qcT93saulOgsV">
-    <mxGraphModel dx="1290" dy="589" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+    <mxGraphModel dx="1737" dy="990" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -89,7 +89,7 @@
         <mxCell id="hdgAiopkdbzbPdRYUJ7d-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="hdgAiopkdbzbPdRYUJ7d-24" target="hdgAiopkdbzbPdRYUJ7d-25" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="hdgAiopkdbzbPdRYUJ7d-37" value="_FilterFunc(arr)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=12;" parent="hdgAiopkdbzbPdRYUJ7d-26" vertex="1" connectable="0">
+        <mxCell id="hdgAiopkdbzbPdRYUJ7d-37" value="Filter(arr)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=12;" parent="hdgAiopkdbzbPdRYUJ7d-26" vertex="1" connectable="0">
           <mxGeometry x="-0.3846" relative="1" as="geometry">
             <mxPoint x="13" y="-10" as="offset" />
           </mxGeometry>
@@ -122,7 +122,7 @@
             <mxPoint x="-22" y="10" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="hdgAiopkdbzbPdRYUJ7d-38" value="_BufferValue.push(val)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="hdgAiopkdbzbPdRYUJ7d-16" vertex="1" connectable="0">
+        <mxCell id="hdgAiopkdbzbPdRYUJ7d-38" value="_ValueBuffer.push(val)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="hdgAiopkdbzbPdRYUJ7d-16" vertex="1" connectable="0">
           <mxGeometry x="0.4487" y="1" relative="1" as="geometry">
             <mxPoint y="-9" as="offset" />
           </mxGeometry>

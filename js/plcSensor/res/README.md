@@ -3,7 +3,7 @@
 # ModuleSensor
 <div style = "color: #555">
     <p align="center">
-    <img src="./res/logo.png" width="400" title="hover text">
+    <img src="logo.png" width="400" title="hover text">
     </p>
 </div>
 
@@ -24,7 +24,7 @@
 - Фильтрация: для снижения влияния шумов и искажений на измерения применяется фильтрация данных. Этот этап помогает получить стабильные и плавные данные от датчиков;
 - Проверка зоны измерений: значения с датчика сверяются с зонами измерений, настраиваемые пользователем. Если значение выходит за пределы заданных зон, это активировать соответствующие реакции в виде коллбэков.
 
-Больше об обработке данных в соответствующем [разделе](./README_DATA_REFINE.md#методы). 
+Больше об обработке [данных](../../plcChannel/res/README_DATA_REFINE.md) и [зонах измерения/тревогах](../../plcChannel/res/README_ALARMS.md) в соответствующих разделах. 
 
 </div>
 
@@ -33,11 +33,11 @@
 
 Набор классов, обеспечивающих функционал датчика, можно условно поделить на следующие части:
 - Основная:
-    - ветка классов [ClassBaseSensor](./README_ANCESTOR.md) и [ClassSensor](./README_MIDDLE.md), хранящих в себе поля и методы, общие для всех датчиков;
+    - ветка классов [ClassBaseDevice](../../plcDevice/res/README.md#classbasedevice), [ClassDevice](../../plcDevice/res/README.md#classdevice), [ClassSensor](./README_MIDDLE.md) хранящих в себе поля и методы, общие для всех датчиков;
     - класс [ClassChannelSensor](README_CHANNEL.md), служит интерфейсом для работы с отдельным каналом датчика;
 - Сервисная: 
-    - [ClassTransform, ClassSuppression и ClassFilter](./README_DATA_REFINE.md) реализует математико-логический аппарат для обработки и корректировки данных с датчика;
-    - [ClassAlarms](./README_ALARMS.md) добавляет поддержку зон измерения и алармов (оповещений/сигналов тревоги);  
+    - [ClassTransform, ClassSuppression и ClassValueBuffer](../../plcChannel/res/README_DATA_REFINE.md) реализует математико-логический аппарат для обработки и корректировки данных с датчика;
+    - [ClassAlarms](../../plcChannel/res/README_ALARMS.md) добавляет поддержку зон измерения и алармов (оповещений/сигналов тревоги);  
 - Прикладная:
     - классы, наследующиеся от **ClassSensor** и реализующие его функционал для работы с конкретным датчиком. 
 
@@ -77,9 +77,9 @@ ch1.Suppression.SetLim(5, 200);
 ch1.Transform.SetLinearFunc(0.1, 0);
 
 // Передача усредняющего фильтра
-ch1.Filter.SetFunc(arr => arr.reduce((curr, prev) => curr+prev, 0)/arr.length);
+ch1.Buffer.SetFilterFunc(arr => arr.reduce((curr, prev) => curr+prev, 0)/arr.length);
 //Установка глубины фильтрации (вместимости буфера) для 1-го канала
-ch1.BufferSize = 5;
+ch1.Buffer.Size = 5;
 
 ch1.EnableAlarms();
 ch1.Alarms.SetZones({
@@ -87,7 +87,7 @@ ch1.Alarms.SetZones({
         low:    5, 
         high:   19,
         cbLow:  (ch) => { console.log(`AN OBSTACLE IS VERY CLOSE: ${ch.Value} cm`); }, 
-        cbHigh: (ch) => {  console.log(`NO OBSTACLE AHEAD`); }
+        cbHigh: (ch) => { console.log(`NO OBSTACLE AHEAD`); }
     },
     green: {
         cb: (ch) =>     { console.log(`AN OBSTACLE IS CLOSE: ${ch.Value}`); }
@@ -122,7 +122,7 @@ setTimeout(() => {
 #### Результат выполнения:
 
 <div align='left'>
-    <img src="./res/example-1.png" alt="Image not found">
+    <img src="example-1.png" alt="Image not found">
 </div>
 
 #### Смена единицы измерения температуры на ходу с помощью настройки линейной функции:
@@ -140,7 +140,7 @@ setInterval(() => {
 
 setTimeout(() => {
     //Настройка перевода значений в Фаренгейты
-    temprtCh.Transform.SetLinearFunct(1.8, 32);
+    temprtCh.Transform.SetLinearFunc(1.8, 32);
     post = 'F';
 }, 4000);
 
@@ -148,7 +148,7 @@ setTimeout(() => {
 #### Результат выполнения:
 
 <div align='left'>
-    <img src="./res/example-2.png" alt="Image not found">
+    <img src="example-2.png" alt="Image not found">
 </div>
 
 </div>

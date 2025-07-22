@@ -14,27 +14,20 @@
 
 Прикладная работа с актуатором выполняется посредством делегирования [тасков](./README_TASK.md), которые имеют под собой механизмы контроля над статусом их выполнения и упорядочивания их вызовов.
 
-Также данный класс композирует в себе сервисные классы (см. [ClassDataRefine](./README_DATA_REFINE.md) и [ClassAlarms](./README_ALARMS.md)), которые безусловно используются при подаче сигнала на устройство. 
+Является наследником класса [ClassChannel](../../plcChannel/res/README.md).
+
 </div>
 
 ### Поля
 <div style = "color: #555">
 
-- <mark style="background-color: lightblue">_Actuator</mark> - ссылка на основной объект актуатора;
-- <mark style="background-color: lightblue">_ChNum</mark> - номер канала;
-- <mark style="background-color: lightblue">_Alarms</mark> - объект класса ClassAlarms;
-- <mark style="background-color: lightblue">_Transform</mark> - объект класса ClassTransform;
-- <mark style="background-color: lightblue">_Suppression</mark> - объект класса ClassSuppression;
+- <mark style="background-color: lightblue">_Tasks</mark> - коллекция тасков канала модуля;
+- <mark style="background-color: lightblue">_ActiveTask</mark> - ссылка на исполняющийся таск канала.
 </div>
 
 ### Аксессоры
 <div style = "color: #555">
 
-- <mark style="background-color: lightblue">CountChannels</mark> - возвращает количество корректно инициализированных каналов типа **ClassChannelActuator**;
-- <mark style="background-color: lightblue">Suppression</mark> - возвращает объект *ClassSuppression*;
-- <mark style="background-color: lightblue">Transform</mark> - возвращает объект *ClassTransform*;
-- <mark style="background-color: lightblue">Alarms</mark> - возвращает объект *ClassAlarms* после его инициализации;
-- <mark style="background-color: lightblue">ID</mark> - возвращает идентификатор актуатора (канала);
 - <mark style="background-color: lightblue">ActiveTask()</mark> - возвращает активный в данный момент таск либо null.
 </div>
 
@@ -42,13 +35,10 @@
 <div style = "color: #555">
 
 - <mark style="background-color: lightblue">SetValue(_val, _opts)</mark>
-- <mark style="background-color: lightblue">Configure(_opts)</mark>
-- <mark style="background-color: lightblue">Reset(_opts)</mark>
-- <mark style="background-color: lightblue">GetInfo(_opts)</mark>
 
-Перечисленные выше методы ссылаются на методы, объявленные в **ClassActuator** и реализованные в прикладном классе актутатора. Их развернутое описание [по ссылке](./README_MIDDLE.md#методы).
+Перечисленные методы ссылаются на методы, объявленные в **ClassActuator** и реализованные в прикладном классе актутатора. Их развернутое описание [по ссылке](./README_MIDDLE.md#методы).
 
-- <mark style="background-color: lightblue">InitTasks()</mark> - инициализирует базовые таски актуатора;
+- <mark style="background-color: lightblue">InitTasks()</mark> - инициализирует базовые таски канала;
 - <mark style="background-color: lightblue">AddTask(_name, _func)</mark> - создает новый таск на основе переданной функции и помещает его в коллекцию по переданному имени. Создает одноименный геттер на данный таск;
 - <mark style="background-color: lightblue">RemoveTask(_name)</mark> - удаляет таск по его идентификатору;
 - <mark style="background-color: lightblue">RunTask(_name, ...args)</mark> - запускает выполнение таска по его идентификатору;
