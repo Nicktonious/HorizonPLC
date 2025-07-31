@@ -94,7 +94,7 @@
 <div style = "color: #555">
 
 ```js
-let btn = DevicesManager.CreateDevice('25')[0];
+let btn = H.DeviceManager.Service.CreateDevice('25')[0];
 btn.Start();
 
 btn.on('enable', () => { print('on'); });
