@@ -11,11 +11,11 @@ class ClassPortSensor extends ClassSensor {
         ClassSensor.call(this, opts);
         this._TypeInSignals = opts.typeInSignals;
         // Кол-во портов (_Pins) обязано быть равно _QuantityChannel
-        if (this._ChannelNames.length !== this._Pins.length)
-            throw new Error('QuantityChannel must be equal to pins count');
+        // if (this._ChannelNames.length !== this._Pins.length)
+            // throw new Error('QuantityChannel must be equal to pins count');
         // Тип сигнала определяет команду чтения с порта
-        if (!Array.isArray(this._TypeInSignals) || this._TypeInSignals.length !== this._ChannelNames.length)
-            throw new Error('_TypeInSignals must be an array length of _ChannelNames');
+        // if (!Array.isArray(this._TypeInSignals) || this._TypeInSignals.length !== this._ChannelNames.length)
+            // throw new Error('_TypeInSignals must be an array length of _ChannelNames');
         // Порты конфигурируются либо согласно конфигу либо в зависимости от _TypeInSignal
         if (opts.pinModes) {
             // Установка режимов согласно конфигу
@@ -42,7 +42,7 @@ class ClassPortSensor extends ClassSensor {
         this._Channels[_chNum].Status = 1;
         
         this._Interval = setInterval(() => {
-            this._Channels.forEach((ch, i) => {
+            this._Channels.filter(_ch => Boolean(_ch)).forEach((ch, i) => {
                 if (ch.Status) ch.Value = this.Read(this._Pins[i]);
             });
         }, _period);
